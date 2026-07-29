@@ -1,1 +1,769 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>三鶯永續行：AI 智慧交通公民共創平台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#27AE60',
+                        secondary: '#2980B9',
+                        accent: '#F39C12',
+                        dark: '#2C3E50',
+                        light: '#F8FAFC',
+                        tanji: '#E67E22' // 碳吉專屬橘色
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans TC', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap');
+        body { font-family: 'Inter', 'Noto Sans TC', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .tab-active { border-bottom: 3px solid #27AE60; color: #27AE60; font-weight: 700; }
+        .tab-inactive { color: #64748b; font-weight: 500; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* 載入動畫 */
+        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #27AE60; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* 自訂核取方塊樣式 */
+        .custom-checkbox input:checked + div { background-color: #27AE60; border-color: #27AE60; color: white; }
+        
+        /* Toast 提示框動畫 */
+        .toast-enter { animation: slideInRight 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .toast-leave { animation: slideOutRight 0.4s ease-in forwards; }
+        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
 
+        /* 漸層背景 */
+        .hero-bg {
+            background: linear-gradient(135deg, rgba(39, 174, 96, 0.95), rgba(41, 128, 185, 0.95)), url('https://images.unsplash.com/photo-1596484552834-6a58f850d0f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80') center/cover;
+        }
+    </style>
+</head>
+<body class="bg-light text-slate-800 min-h-screen flex flex-col relative overflow-x-hidden">
+
+    <div id="toast-container" class="fixed top-20 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <header class="bg-white shadow-sm sticky top-0 z-40">
+        <div class="max-w-md mx-auto px-4 py-3 flex justify-between items-center md:max-w-3xl">
+            <div class="flex items-center gap-2">
+                <div class="text-primary font-bold text-xl tracking-tight flex items-center gap-2">
+                    <i class="fa-solid fa-leaf"></i>
+                    <span>三鶯永續行</span>
+                </div>
+                <!-- 專為評審 Demo 設計的身分切換器 -->
+                <select id="roleSelector" onchange="switchRole(this.value)" class="ml-2 text-[10px] bg-slate-100 border border-slate-200 text-slate-500 rounded px-1 py-0.5 outline-none cursor-pointer hover:bg-slate-200">
+                    <option value="user">市民視角</option>
+                    <option value="admin">管理員視角</option>
+                </select>
+            </div>
+            
+            <button id="authBtn" onclick="toggleAuth()" class="bg-primary text-white px-4 py-1.5 rounded-full text-sm font-medium hover:bg-emerald-700 transition shadow-sm flex items-center gap-2">
+                <i class="fa-brands fa-google"></i> <span id="authText">實名登入</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-grow flex flex-col items-center w-full">
+        <section class="w-full hero-bg text-white py-8 px-4 text-center shadow-inner">
+            <h1 class="text-2xl font-bold mb-2 tracking-wide">AI 智慧交通公民共創平台</h1>
+            <p class="text-sm opacity-90 max-w-md mx-auto leading-relaxed">
+                實名驗證集點數，匿名發文保隱私。<br>您的真實搭乘體驗，是優化綠色交通的起點。
+            </p>
+        </section>
+
+        <div class="w-full max-w-md md:max-w-3xl bg-white shadow-sm sticky top-[60px] z-30">
+            <div class="flex w-full" id="navTabs">
+                <!-- 透過 JS 動態渲染導覽列 -->
+            </div>
+        </div>
+
+        <div class="w-full max-w-md md:max-w-3xl p-4 flex-grow relative pb-24">
+            
+            <div id="view-feed" class="fade-in">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="font-bold text-lg text-dark">在地交流動態</h2>
+                    <span class="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full"><i class="fa-solid fa-shield-halved text-emerald-500"></i> AI 防護網啟用中</span>
+                </div>
+                <div id="feedContainer" class="space-y-4">
+                    <!-- 動態卡片由 JS 產生 -->
+                </div>
+            </div>
+
+            <div id="view-submit" class="hidden fade-in">
+                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+                    <div class="mb-4 flex justify-between items-start">
+                        <div>
+                            <h2 class="font-bold text-lg text-dark mb-1">分享搭乘體驗</h2>
+                            <p class="text-xs text-slate-500">系統自動進行語意分析並匿名發布。</p>
+                        </div>
+                        <div class="flex flex-col items-end gap-1">
+                            <div class="bg-orange-50 border border-orange-100 text-tanji px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm">
+                                <i class="fa-solid fa-coins"></i> +10 碳吉
+                            </div>
+                            <div class="bg-green-50 border border-green-100 text-green-600 px-3 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 shadow-sm">
+                                <i class="fa-solid fa-leaf"></i> 減碳獎勵
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="authWarning" class="bg-amber-50 text-amber-700 p-3 rounded-lg text-sm mb-4 border border-amber-200 flex items-start gap-2">
+                        <i class="fa-solid fa-circle-exclamation mt-0.5"></i>
+                        <span>請先點擊右上角「實名登入」以啟用發文與集點功能。您的真實身分將被加密保護。</span>
+                    </div>
+
+                    <form id="feedbackForm" onsubmit="handleFeedbackSubmit(event)" class="space-y-4 relative">
+                        <div id="formOverlay" class="absolute inset-0 bg-white/70 backdrop-blur-[1px] z-10 rounded-xl transition-all duration-300"></div>
+                        
+                        <!-- 量化數據：站點 -->
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1.5">發生站點 / 區域 <span class="text-red-500">*</span></label>
+                            <select id="station" required class="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition text-sm appearance-none">
+                                <option value="" disabled selected>請選擇相關站點</option>
+                                <option value="LB08 鶯歌車站">LB08 鶯歌車站</option>
+                                <option value="LB07 臺北大學站">LB07 臺北大學站</option>
+                                <option value="LB06 三峽站">LB06 三峽站</option>
+                                <option value="鶯歌老街周邊">鶯歌老街周邊</option>
+                                <option value="三峽老街周邊">三峽老街周邊</option>
+                                <option value="其他沿線站點">其他沿線站點</option>
+                            </select>
+                        </div>
+
+                        <!-- 量化數據：運具種類 (多選) -->
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1.5">相關運具 (可多選) <span class="text-red-500">*</span></label>
+                            <div class="grid grid-cols-2 gap-2" id="transportOptions">
+                                <label class="custom-checkbox cursor-pointer relative">
+                                    <input type="checkbox" value="捷運三鶯線" class="peer sr-only" name="transport">
+                                    <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-center font-medium text-slate-600 transition-all hover:bg-slate-100 peer-checked:bg-primary peer-checked:text-white peer-checked:border-primary">
+                                        <i class="fa-solid fa-train-subway mr-1"></i> 捷運
+                                    </div>
+                                </label>
+                                <label class="custom-checkbox cursor-pointer relative">
+                                    <input type="checkbox" value="公車/客運" class="peer sr-only" name="transport">
+                                    <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-center font-medium text-slate-600 transition-all hover:bg-slate-100 peer-checked:bg-primary peer-checked:text-white peer-checked:border-primary">
+                                        <i class="fa-solid fa-bus mr-1"></i> 公車/客運
+                                    </div>
+                                </label>
+                                <label class="custom-checkbox cursor-pointer relative">
+                                    <input type="checkbox" value="微型運具 (YouBike)" class="peer sr-only" name="transport">
+                                    <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-center font-medium text-slate-600 transition-all hover:bg-slate-100 peer-checked:bg-primary peer-checked:text-white peer-checked:border-primary">
+                                        <i class="fa-solid fa-bicycle mr-1"></i> YouBike
+                                    </div>
+                                </label>
+                                <label class="custom-checkbox cursor-pointer relative">
+                                    <input type="checkbox" value="步行/無障礙" class="peer sr-only" name="transport">
+                                    <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-center font-medium text-slate-600 transition-all hover:bg-slate-100 peer-checked:bg-primary peer-checked:text-white peer-checked:border-primary">
+                                        <i class="fa-solid fa-person-walking mr-1"></i> 步行
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- 量化數據：特定班次/時間 -->
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1.5">特定班次或時間 <span class="text-slate-400 font-normal">(選填)</span></label>
+                            <input type="text" id="routeTime" placeholder="例如：916公車、早上 08:30" class="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition text-sm">
+                        </div>
+
+                        <!-- 質化數據：文本描述 -->
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1.5">實際狀況或優化建議 <span class="text-red-500">*</span></label>
+                            <textarea id="content" required rows="4" placeholder="請描述您的實際搭乘體驗或建議，例如：北大側門早上尖峰時段借不到 YouBike，導致步行轉乘時間增加..." class="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition text-sm resize-none"></textarea>
+                        </div>
+                        
+                        <div id="aiProcessZone" class="hidden bg-slate-50 rounded-xl p-4 border border-slate-200 text-sm shadow-inner">
+                            <div class="flex items-center gap-3 text-primary font-bold mb-2">
+                                <span class="loader"></span> <span>AI 分析引擎運算中...</span>
+                            </div>
+                            <ul class="text-xs text-slate-500 ml-8 space-y-1" id="aiProcessText">
+                                <li><i class="fa-solid fa-check text-emerald-500 mr-1 opacity-0 transition-opacity" id="ai-step-1"></i> 執行惡意言論與雜訊過濾</li>
+                                <li><i class="fa-solid fa-check text-emerald-500 mr-1 opacity-0 transition-opacity" id="ai-step-2"></i> 萃取關鍵字與情緒特徵</li>
+                                <li><i class="fa-solid fa-check text-emerald-500 mr-1 opacity-0 transition-opacity" id="ai-step-3"></i> 生成結構化意見標籤</li>
+                            </ul>
+                        </div>
+
+                        <button type="submit" id="submitBtn" class="w-full bg-primary text-white rounded-xl py-3.5 font-bold shadow-md hover:bg-emerald-700 transition active:scale-[0.98] flex justify-center items-center gap-2">
+                            <i class="fa-regular fa-paper-plane"></i> 確認發布 (獲取碳吉與減碳成就)
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div id="view-rewards" class="hidden fade-in">
+                
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <!-- 碳吉點數卡片 -->
+                    <div class="bg-gradient-to-br from-orange-500 to-tanji rounded-2xl p-5 text-white shadow-lg relative overflow-hidden">
+                        <i class="fa-solid fa-coins absolute -right-2 -bottom-2 text-6xl opacity-20"></i>
+                        <h2 class="font-medium text-orange-100 text-xs mb-1">累積碳吉 (TanJi)</h2>
+                        <div class="text-3xl font-extrabold flex items-baseline gap-1 mb-2">
+                            <span id="userPoints">120</span> <span class="text-sm font-medium opacity-80">pts</span>
+                        </div>
+                        <div class="text-[10px] bg-white/20 px-2 py-1 rounded inline-block backdrop-blur-sm">距離兌換門檻差 80 點</div>
+                    </div>
+
+                    <!-- 減碳量卡片 (遊戲化) -->
+                    <div class="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-5 text-white shadow-lg relative overflow-hidden">
+                        <i class="fa-solid fa-leaf absolute -right-2 -bottom-2 text-6xl opacity-20"></i>
+                        <h2 class="font-medium text-emerald-100 text-xs mb-1">綠色通勤減碳量</h2>
+                        <div class="text-3xl font-extrabold flex items-baseline gap-1 mb-2">
+                            <span id="carbonSaved">1.5</span> <span class="text-sm font-medium opacity-80">kg</span>
+                        </div>
+                        <div class="text-[10px] bg-white/20 px-2 py-1 rounded inline-block backdrop-blur-sm">相當於種植了 0.1 棵樹</div>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center mb-3 mt-6">
+                    <h3 class="font-bold text-dark">我的意見追蹤與紀錄</h3>
+                    <span class="text-xs text-slate-500">透明化治理進度</span>
+                </div>
+                
+                <div class="space-y-3" id="rewardHistory">
+                    <!-- 紀錄由 JS 動態產生，包含進度追蹤 -->
+                </div>
+            </div>
+
+            <div id="view-dashboard" class="hidden fade-in">
+                <div class="flex justify-between items-end mb-4">
+                    <div>
+                        <h2 class="font-bold text-xl text-dark">交通治理儀表板</h2>
+                        <p class="text-xs text-slate-500">管理者與決策單位視角</p>
+                    </div>
+                    <button onclick="exportCSV()" class="bg-dark text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-slate-700 transition shadow-sm flex items-center gap-2">
+                        <i class="fa-solid fa-download"></i> 匯出報表
+                    </button>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-center items-center">
+                        <span class="text-xs font-bold text-slate-500 mb-1">累計有效回饋 (筆)</span>
+                        <span class="text-3xl font-extrabold text-primary" id="stat-total">0</span>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-center items-center">
+                        <span class="text-xs font-bold text-slate-500 mb-1">AI 雜訊攔截率</span>
+                        <span class="text-3xl font-extrabold text-secondary">92%</span>
+                    </div>
+                </div>
+
+                <!-- 新增：各站點意見熱區圖 -->
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mb-4">
+                    <h3 class="text-sm font-bold text-slate-700 mb-3 text-center">各站點 / 區域意見熱區統計</h3>
+                    <div class="relative h-48 w-full">
+                        <canvas id="stationChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mb-4">
+                    <h3 class="text-sm font-bold text-slate-700 mb-3 text-center">民眾意見自動歸類 (NLP 分群)</h3>
+                    <div class="relative h-56 w-full">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                    <h3 class="text-sm font-bold text-slate-700 mb-3 text-center">民眾搭乘體驗情緒趨勢</h3>
+                    <div class="relative h-48 w-full">
+                        <canvas id="sentimentChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // --- 全域狀態管理 ---
+        let isLoggedIn = false;
+        let currentRole = 'user'; // 'user' 或 'admin'
+        let currentPoints = 120;
+        let currentCarbon = 1.5; // 減碳量 (kg)
+        let chartInstances = {};
+        
+        // 模擬初始結構化資料 (結合質化與量化，加入進度追蹤 status)
+        let feedbacks = [
+            { id: 101, station: "LB07 臺北大學站", transports: ["微型運具 (YouBike)", "捷運三鶯線"], routeTime: "平日早上 08:00", content: "學勤路上的微型運具車柱太少，尖峰時段經常借不到車，導致步行轉乘時間增加，希望交通局評估擴建。", ai_category: "微型運具調度", ai_sentiment: "negative", time: "10 分鐘前", avatar: "B", status: "AI 彙整中", statusCode: 0 },
+            { id: 102, station: "LB08 鶯歌車站", transports: ["步行/無障礙"], routeTime: "", content: "站外的人行道高低落差較大，下雨天推嬰兒車轉乘稍嫌不便，建議優化動線平整度。", ai_category: "無障礙與步行", ai_sentiment: "negative", time: "1 小時前", avatar: "A", status: "已納入月報表", statusCode: 1 },
+            { id: 103, station: "LB06 三峽站", transports: ["公車/客運", "捷運三鶯線"], routeTime: "916 公車", content: "接駁公車的時間跟捷運到站時間搭配得很好，站牌指示也很清楚，通勤體驗相當順暢！", ai_category: "班次銜接", ai_sentiment: "positive", time: "3 小時前", avatar: "C", status: "已歸檔參考", statusCode: 2 },
+            { id: 104, station: "LB07 臺北大學站", transports: ["步行/無障礙"], routeTime: "晚上 22:00", content: "晚上從捷運站走回社區，大學路周邊路燈照明似乎不足，希望能增加照明以提升夜間步行安全感。", ai_category: "候車與周邊環境", ai_sentiment: "negative", time: "昨天", avatar: "D", status: "市府研議中", statusCode: 3 }
+        ];
+
+        // --- 狀態標籤渲染函式 ---
+        function getStatusBadge(code, text) {
+            const styles = {
+                0: "bg-slate-100 text-slate-600 border-slate-200", // AI 彙整中
+                1: "bg-blue-50 text-blue-600 border-blue-200",    // 已納入報表
+                2: "bg-emerald-50 text-emerald-600 border-emerald-200", // 已歸檔
+                3: "bg-amber-50 text-amber-600 border-amber-200"  // 市府研議中
+            };
+            const style = styles[code] || styles[0];
+            return `<span class="text-[10px] px-2 py-0.5 rounded-full border ${style} font-bold whitespace-nowrap"><i class="fa-solid fa-spinner fa-spin-pulse mr-1" style="${code===0?'':'display:none'}"></i>${text}</span>`;
+        }
+
+        // --- 初始化 ---
+        document.addEventListener('DOMContentLoaded', () => {
+            renderNavTabs();
+            renderFeed();
+            renderHistory();
+            updateAuthUI();
+            if (currentRole === 'admin') initCharts();
+        });
+
+        // --- UI 元件：Toast 提示框 ---
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const icon = type === 'success' ? '<i class="fa-solid fa-circle-check text-emerald-500"></i>' : '<i class="fa-solid fa-circle-info text-blue-500"></i>';
+            const border = type === 'success' ? 'border-emerald-200' : 'border-blue-200';
+            
+            toast.className = `bg-white px-4 py-3 rounded-xl shadow-lg border ${border} text-sm font-bold text-slate-700 flex items-center gap-3 toast-enter pointer-events-auto`;
+            toast.innerHTML = `${icon} <span>${message}</span>`;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.replace('toast-enter', 'toast-leave');
+                setTimeout(() => toast.remove(), 400);
+            }, 3000);
+        }
+
+        // --- STREAMING_CHUNK:Handling Role and Authentication... ---
+        function switchRole(role) {
+            currentRole = role;
+            renderNavTabs();
+            
+            // 強制切換回首頁佈告欄
+            switchTab('feed');
+            
+            if(role === 'admin' && !chartInstances.category) {
+                setTimeout(initCharts, 100);
+            }
+            
+            showToast(`已切換為「${role === 'admin' ? '管理員' : '市民'}」視角`, 'info');
+        }
+
+        function toggleAuth() {
+            isLoggedIn = !isLoggedIn;
+            updateAuthUI();
+            showToast(isLoggedIn ? '實名驗證成功！已啟用發文與集點功能。' : '已登出。');
+        }
+
+        function updateAuthUI() {
+            const btn = document.getElementById('authBtn');
+            const overlay = document.getElementById('formOverlay');
+            const warning = document.getElementById('authWarning');
+
+            if (isLoggedIn) {
+                btn.classList.replace('bg-primary', 'bg-slate-100');
+                btn.classList.replace('text-white', 'text-slate-700');
+                btn.classList.replace('hover:bg-emerald-700', 'hover:bg-slate-200');
+                btn.innerHTML = `<i class="fa-solid fa-user-shield text-primary"></i> <span id="authText">已驗證</span>`;
+                overlay.classList.add('opacity-0', 'pointer-events-none');
+                warning.classList.add('hidden');
+            } else {
+                btn.classList.replace('bg-slate-100', 'bg-primary');
+                btn.classList.replace('text-slate-700', 'text-white');
+                btn.classList.replace('hover:bg-slate-200', 'hover:bg-emerald-700');
+                btn.innerHTML = `<i class="fa-brands fa-google"></i> <span id="authText">實名登入</span>`;
+                overlay.classList.remove('opacity-0', 'pointer-events-none');
+                warning.classList.remove('hidden');
+            }
+        }
+
+        // --- 導覽列與視圖切換 ---
+        function renderNavTabs() {
+            const nav = document.getElementById('navTabs');
+            let tabsHTML = '';
+            
+            if (currentRole === 'user') {
+                tabsHTML = `
+                    <button onclick="switchTab('feed')" id="tab-feed" class="flex-1 py-3 text-center tab-active transition">
+                        <i class="fa-solid fa-comments mb-1 block text-lg"></i><span class="text-xs">交流佈告欄</span>
+                    </button>
+                    <button onclick="switchTab('submit')" id="tab-submit" class="flex-1 py-3 text-center tab-inactive transition">
+                        <i class="fa-solid fa-pen-to-square mb-1 block text-lg"></i><span class="text-xs">我要發聲</span>
+                    </button>
+                    <button onclick="switchTab('rewards')" id="tab-rewards" class="flex-1 py-3 text-center tab-inactive transition">
+                        <i class="fa-solid fa-medal mb-1 block text-lg"></i><span class="text-xs">個人中心</span>
+                    </button>
+                `;
+            } else {
+                tabsHTML = `
+                    <button onclick="switchTab('feed')" id="tab-feed" class="flex-1 py-3 text-center tab-active transition">
+                        <i class="fa-solid fa-comments mb-1 block text-lg"></i><span class="text-xs">佈告欄 (檢視)</span>
+                    </button>
+                    <button onclick="switchTab('dashboard')" id="tab-dashboard" class="flex-1 py-3 text-center tab-inactive transition">
+                        <i class="fa-solid fa-chart-pie mb-1 block text-lg"></i><span class="text-xs">數據儀表板</span>
+                    </button>
+                `;
+            }
+            nav.innerHTML = tabsHTML;
+        }
+
+        function switchTab(tabId) {
+            const allViews = ['feed', 'submit', 'rewards', 'dashboard'];
+            allViews.forEach(id => {
+                const view = document.getElementById(`view-${id}`);
+                const btn = document.getElementById(`tab-${id}`);
+                if(view) view.classList.add('hidden');
+                if(btn) {
+                    btn.classList.remove('tab-active');
+                    btn.classList.add('tab-inactive');
+                }
+            });
+            
+            const activeView = document.getElementById(`view-${tabId}`);
+            const activeBtn = document.getElementById(`tab-${tabId}`);
+            if(activeView) activeView.classList.remove('hidden');
+            if(activeBtn) {
+                activeBtn.classList.remove('tab-inactive');
+                activeBtn.classList.add('tab-active');
+            }
+
+            if(tabId === 'dashboard') updateDashboardStats();
+        }
+
+        // --- STREAMING_CHUNK:Rendering Feed Data... ---
+        function getSentimentBadge(sentiment) {
+            if(sentiment === 'positive') return '<span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-bold">良好體驗</span>';
+            if(sentiment === 'negative') return '<span class="bg-rose-100 text-rose-700 px-2 py-0.5 rounded text-[10px] font-bold">優化建議</span>';
+            return '<span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-[10px] font-bold">中立描述</span>';
+        }
+
+        function renderFeed() {
+            const container = document.getElementById('feedContainer');
+            container.innerHTML = '';
+            
+            feedbacks.forEach(item => {
+                const colors = ['bg-indigo-500', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500', 'bg-cyan-500'];
+                const avatarColor = colors[item.id % colors.length];
+                
+                // 處理運具標籤
+                const transportTags = item.transports.map(t => `<span class="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200">${t}</span>`).join('');
+                
+                const card = `
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                        <div class="flex justify-between items-start mb-3">
+                            <div class="flex items-center gap-2">
+                                <div class="${avatarColor} text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shadow-sm">
+                                    ${item.avatar}
+                                </div>
+                                <div>
+                                    <div class="text-sm font-bold text-dark flex items-center gap-1">
+                                        匿名市民 <i class="fa-solid fa-circle-check text-blue-500 text-[10px]" title="已實名驗證"></i>
+                                    </div>
+                                    <div class="text-xs text-slate-500">${item.time} · ${item.station}</div>
+                                </div>
+                            </div>
+                            <!-- 進度追蹤 Badge -->
+                            ${getStatusBadge(item.statusCode, item.status)}
+                        </div>
+                        
+                        ${transportTags ? `<div class="flex gap-1 flex-wrap mb-2">${transportTags} ${item.routeTime ? `<span class="text-[10px] text-slate-400 py-0.5">(${item.routeTime})</span>` : ''}</div>` : ''}
+                        
+                        <p class="text-sm text-slate-700 mb-3 leading-relaxed">${item.content}</p>
+                        
+                        <div class="flex justify-between items-center bg-slate-50 p-2 rounded-lg border border-slate-100">
+                            <div class="flex items-center gap-2">
+                                <span class="bg-blue-50 text-secondary border border-blue-100 px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1">
+                                    <i class="fa-solid fa-robot"></i> ${item.ai_category}
+                                </span>
+                            </div>
+                            ${getSentimentBadge(item.ai_sentiment)}
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', card);
+            });
+            
+            const totalEl = document.getElementById('stat-total');
+            if(totalEl) totalEl.innerText = feedbacks.length;
+        }
+
+        // --- STREAMING_CHUNK:Handling Form Submission and AI Simulation... ---
+        async function handleFeedbackSubmit(e) {
+            e.preventDefault();
+            if(!isLoggedIn) {
+                showToast('請先進行實名登入！', 'info');
+                return;
+            }
+
+            const station = document.getElementById('station').value;
+            const content = document.getElementById('content').value;
+            const routeTime = document.getElementById('routeTime').value;
+            
+            // 獲取多選的運具
+            const transportCheckboxes = document.querySelectorAll('input[name="transport"]:checked');
+            const transports = Array.from(transportCheckboxes).map(cb => cb.value);
+            
+            if(transports.length === 0) {
+                showToast('請至少選擇一項相關運具！', 'info');
+                return;
+            }
+
+            const btn = document.getElementById('submitBtn');
+            const aiZone = document.getElementById('aiProcessZone');
+
+            // 1. UI 狀態鎖定切換
+            btn.disabled = true;
+            btn.classList.add('opacity-50');
+            aiZone.classList.remove('hidden');
+
+            // 2. 模擬 AI 處理步驟 (展現技術感給評審看)
+            const step1 = document.getElementById('ai-step-1');
+            const step2 = document.getElementById('ai-step-2');
+            const step3 = document.getElementById('ai-step-3');
+            
+            step1.classList.remove('opacity-0');
+            await new Promise(r => setTimeout(r, 600));
+            step2.classList.remove('opacity-0');
+            await new Promise(r => setTimeout(r, 600));
+            step3.classList.remove('opacity-0');
+            await new Promise(r => setTimeout(r, 600));
+
+            // 3. 簡單模擬 AI 分類邏輯 (依關鍵字，取代「痛點」字眼)
+            let category = "其他建議";
+            let sentiment = "neutral";
+            
+            if(content.includes("腳踏車") || content.includes("YouBike") || content.includes("借不到") || transports.includes("微型運具 (YouBike)")) {
+                category = "微型運具調度"; sentiment = "negative";
+            } else if (content.includes("公車") || content.includes("等很久") || content.includes("時間")) {
+                category = "班次銜接"; sentiment = content.includes("好") || content.includes("順") ? "positive" : "negative";
+            } else if (content.includes("路") || content.includes("雨") || content.includes("安全") || transports.includes("步行/無障礙")) {
+                category = "無障礙與步行"; sentiment = "negative";
+            }
+
+            // 4. 寫入資料陣列頂部，加入狀態追蹤
+            const newFeedback = {
+                id: Date.now(),
+                station: station,
+                transports: transports,
+                routeTime: routeTime,
+                content: content,
+                ai_category: category,
+                ai_sentiment: sentiment,
+                time: "剛剛",
+                avatar: "U",
+                status: "AI 彙整中", // 新增進度追蹤
+                statusCode: 0
+            };
+            feedbacks.unshift(newFeedback);
+
+            // 5. 更新點數與減碳量
+            currentPoints += 10;
+            // 若有選擇低碳運具，微幅增加減碳量 (模擬)
+            if(transports.length > 0) currentCarbon += 0.2; 
+            
+            updateRewardsUI(newFeedback);
+
+            // 6. 重置表單與 UI
+            document.getElementById('feedbackForm').reset();
+            btn.disabled = false;
+            btn.classList.remove('opacity-50');
+            aiZone.classList.add('hidden');
+            [step1, step2, step3].forEach(el => el.classList.add('opacity-0'));
+            
+            showToast('發布成功！獲得 10 點碳吉與減碳成就。');
+            
+            // 切換回首頁並重新渲染
+            switchTab('feed');
+            renderFeed();
+        }
+
+        // --- STREAMING_CHUNK:Updating Rewards and Tracking UI... ---
+        function renderHistory() {
+            const container = document.getElementById('rewardHistory');
+            container.innerHTML = '';
+            
+            // 初始歷史紀錄
+            const initialHistory = [
+                { title: '發表有效搭乘回饋', date: '2026-07-28', pts: '+10', icon: 'fa-pen-nib', color: 'emerald' },
+                { title: '完成實名身分驗證', date: '2026-07-20', pts: '+100', icon: 'fa-user-check', color: 'blue' }
+            ];
+            
+            initialHistory.forEach(record => {
+                container.insertAdjacentHTML('beforeend', createHistoryCard(record));
+            });
+        }
+
+        function createHistoryCard(record, feedback = null) {
+            let trackingInfo = '';
+            if (feedback) {
+                trackingInfo = `<div class="mt-2 pt-2 border-t border-slate-100 flex justify-between items-center w-full">
+                    <span class="text-[10px] text-slate-400 truncate max-w-[150px]">${feedback.content}</span>
+                    ${getStatusBadge(feedback.statusCode, feedback.status)}
+                </div>`;
+            }
+
+            return `
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-col fade-in">
+                    <div class="flex justify-between items-center w-full">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-${record.color}-100 text-${record.color}-600 flex items-center justify-center shrink-0">
+                                <i class="fa-solid ${record.icon}"></i>
+                            </div>
+                            <div>
+                                <div class="text-sm font-bold text-dark">${record.title}</div>
+                                <div class="text-xs text-slate-500">${record.date}</div>
+                            </div>
+                        </div>
+                        <div class="font-bold text-tanji">${record.pts}</div>
+                    </div>
+                    ${trackingInfo}
+                </div>
+            `;
+        }
+
+        function updateRewardsUI(newFeedback = null) {
+            document.getElementById('userPoints').innerText = currentPoints;
+            document.getElementById('carbonSaved').innerText = currentCarbon.toFixed(1);
+            
+            // 加入新紀錄
+            if (newFeedback) {
+                const historyContainer = document.getElementById('rewardHistory');
+                const today = new Date().toISOString().split('T')[0];
+                const record = { title: '發表有效搭乘體驗', date: today, pts: '+10', icon: 'fa-paper-plane', color: 'emerald' };
+                historyContainer.insertAdjacentHTML('afterbegin', createHistoryCard(record, newFeedback));
+            }
+        }
+
+        // --- STREAMING_CHUNK:Admin CSV Export and Chart.js Dashboards... ---
+        function exportCSV() {
+            if(feedbacks.length === 0) {
+                showToast('目前沒有數據可供匯出。', 'info');
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; 
+            csvContent += "資料ID,發生站點,運具類型,特定班次時間,AI意見分類,AI情緒判定,處理進度,民眾實際回饋內容\n";
+            
+            feedbacks.forEach(f => {
+                const transportsStr = f.transports.join('; ');
+                const safeContent = `"${f.content.replace(/"/g, '""').replace(/\n/g, ' ')}"`;
+                csvContent += `${f.id},${f.station},${transportsStr},${f.routeTime},${f.ai_category},${f.ai_sentiment},${f.status},${safeContent}\n`;
+            });
+            
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `三鶯線意見洞察報表_${new Date().getTime()}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showToast('CSV 報表匯出成功！');
+        }
+
+        function initCharts() {
+            Chart.defaults.font.family = "'Noto Sans TC', sans-serif";
+            
+            // 1. 各站點意見熱區圖 (橫向長條圖)
+            const ctxStation = document.getElementById('stationChart').getContext('2d');
+            chartInstances.station = new Chart(ctxStation, {
+                type: 'bar',
+                data: {
+                    labels: ['LB07 臺北大學站', 'LB08 鶯歌車站', 'LB06 三峽站', '其他站點'],
+                    datasets: [{
+                        label: '意見收集數量',
+                        data: [45, 30, 15, 10], // 模擬數據
+                        backgroundColor: '#2980B9',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    indexAxis: 'y', // 橫向
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { 
+                        x: { beginAtZero: true, grid: { color: '#f1f5f9' } }, 
+                        y: { grid: { display: false } } 
+                    }
+                }
+            });
+
+            // 2. 意見自動歸類圓餅圖
+            const ctxCat = document.getElementById('categoryChart').getContext('2d');
+            chartInstances.category = new Chart(ctxCat, {
+                type: 'doughnut',
+                data: {
+                    labels: ['微型運具調度', '無障礙與步行', '班次銜接', '候車與周邊環境', '其他'],
+                    datasets: [{
+                        data: [40, 25, 20, 10, 5],
+                        backgroundColor: ['#E67E22', '#27AE60', '#2980B9', '#E74C3C', '#95A5A6'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { 
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } } },
+                    cutout: '65%'
+                }
+            });
+
+            // 3. 情緒趨勢長條圖
+            const ctxSen = document.getElementById('sentimentChart').getContext('2d');
+            chartInstances.sentiment = new Chart(ctxSen, {
+                type: 'bar',
+                data: {
+                    labels: ['良好體驗', '中立描述', '優化建議'],
+                    datasets: [{
+                        label: '情緒聲量',
+                        data: [15, 30, 85],
+                        backgroundColor: ['#10B981', '#94A3B8', '#F43F5E'],
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { 
+                        y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, 
+                        x: { grid: { display: false } } 
+                    }
+                }
+            });
+            updateDashboardStats();
+        }
+
+        function updateDashboardStats() {
+            const totalEl = document.getElementById('stat-total');
+            if(totalEl) totalEl.innerText = feedbacks.length;
+        }
+    </script>
+
+    <!-- 
+      給碳吉 (TanJi) 團隊的開發筆記：
+      未來要串接 Firebase 整合真實資料庫與 Google 登入時，請於下方填入您的 firebaseConfig。
+    -->
+    <script type="module">
+        /*
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            // TODO: 在此貼上您的 Firebase Config
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        */
+    </script>
+
+</body>
+</html>
