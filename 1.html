@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="robots" content="noindex,nofollow">
     <title>三鶯永續行：AI 智慧交通公民共創平台</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -58,12 +57,36 @@
                     <option value="user">市民視角</option>
                     <option value="admin">管理員視角</option>
                 </select>
+                <button id="configKeyBtn" class="text-slate-400 hover:text-slate-600 p-1 text-xs" title="設定展示金鑰">
+                    <i class="fa-solid fa-gear"></i>
+                </button>
             </div>
             <button id="authBtn" class="bg-primary text-white px-4 py-1.5 rounded-full text-sm font-medium hover:bg-emerald-700 transition shadow-sm flex items-center gap-2">
                 <i class="fa-brands fa-google"></i> <span id="authText">實名登入</span>
             </button>
         </div>
     </header>
+
+    <div id="authModal" class="hidden fixed inset-0 bg-slate-900/50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+            <h3 class="text-lg font-bold text-dark mb-2">身分登入與驗證</h3>
+            <p class="text-xs text-slate-500 mb-4">輸入信箱進行登入或自動建立帳號</p>
+            <div class="space-y-3">
+                <input type="email" id="emailInput" placeholder="電子郵件" class="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 text-sm outline-none focus:ring-2 focus:ring-primary">
+                <input type="password" id="pwdInput" placeholder="密碼（至少6碼）" class="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 text-sm outline-none focus:ring-2 focus:ring-primary">
+                <button id="emailSubmitBtn" class="w-full bg-primary text-white rounded-xl py-2.5 text-sm font-bold hover:bg-emerald-700 transition">信箱登入 / 註冊</button>
+                <div class="relative flex py-1 items-center">
+                    <div class="flex-grow border-t border-slate-200"></div>
+                    <span class="flex-shrink mx-2 text-[10px] text-slate-400">或</span>
+                    <div class="flex-grow border-t border-slate-200"></div>
+                </div>
+                <button id="googleLoginBtn" class="w-full bg-slate-100 border border-slate-200 text-slate-700 rounded-xl py-2.5 text-sm font-bold hover:bg-slate-200 transition flex items-center justify-center gap-2">
+                    <i class="fa-brands fa-google text-rose-500"></i> Google 快速登入
+                </button>
+                <button id="closeAuthModal" class="w-full text-slate-400 text-xs py-1">取消返回</button>
+            </div>
+        </div>
+    </div>
 
     <main class="flex-grow flex flex-col items-center w-full">
         <section class="w-full hero-bg text-white py-8 px-4 text-center shadow-inner">
@@ -169,9 +192,9 @@
                             <div class="flex items-center gap-3 text-primary font-bold mb-2">
                                 <span class="loader"></span> <span>AI 分析引擎運算中...</span>
                             </div>
-                            <ul class="text-xs text-slate-500 ml-8 space-y-1" id="aiProcessText">
+                            <ul class="text-xs text-slate-500 ml-8 space-y-1">
                                 <li><i class="fa-solid fa-check text-emerald-500 mr-1 opacity-0 transition-opacity" id="ai-step-1"></i> 執行惡意言論與雜訊過濾</li>
-                                <li><i class="fa-solid fa-check text-emerald-500 mr-1 opacity-0 transition-opacity" id="ai-step-2"></i> 萃取關鍵字與情緒特徵</li>
+                                <li><i class="fa-solid fa-check text-emerald-500 mr-1 opacity-0 transition-opacity" id="ai-step-2"></i> 萃取特徵與情緒歸類</li>
                                 <li><i class="fa-solid fa-check text-emerald-500 mr-1 opacity-0 transition-opacity" id="ai-step-3"></i> 生成結構化意見標籤</li>
                             </ul>
                         </div>
@@ -261,7 +284,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, doc, getDoc, setDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -272,7 +295,7 @@
             messagingSenderId: "833697195100",
             appId: "1:833697195100:web:a60b9bc21990afeeffb299"
         };
-      
+
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
@@ -282,9 +305,11 @@
         let currentRole = 'user';
         let chartInstances = {};
         let localFeedbacks = [];
+        let runtimeGeminiKey = localStorage.getItem('demo_gemini_key') || "";
 
         function showToast(message, type = 'success') {
             const container = document.getElementById('toast-container');
+            if(!container) return;
             const toast = document.createElement('div');
             const icon = type === 'success' ? '<i class="fa-solid fa-circle-check text-emerald-500"></i>' : '<i class="fa-solid fa-circle-info text-blue-500"></i>';
             const border = type === 'success' ? 'border-emerald-200' : 'border-blue-200';
@@ -299,40 +324,90 @@
             }, 3000);
         }
 
+        document.getElementById('configKeyBtn').addEventListener('click', () => {
+            const current = localStorage.getItem('demo_gemini_key') || "";
+            const input = prompt("請輸入展示用 Gemini API Key（留空則使用本機模擬）：", current);
+            if(input !== null) {
+                runtimeGeminiKey = input.trim();
+                localStorage.setItem('demo_gemini_key', runtimeGeminiKey);
+                showToast(runtimeGeminiKey ? "已儲存展示金鑰" : "切換回本機模擬模式");
+            }
+        });
+
         function updateAuthUI() {
             const btn = document.getElementById('authBtn');
             const overlay = document.getElementById('formOverlay');
             const warning = document.getElementById('authWarning');
 
             if (currentUser) {
-                btn.classList.replace('bg-primary', 'bg-slate-100');
-                btn.classList.replace('text-white', 'text-slate-700');
-                btn.classList.replace('hover:bg-emerald-700', 'hover:bg-slate-200');
-                btn.innerHTML = `<i class="fa-solid fa-user-shield text-primary"></i> <span id="authText">已登入</span>`;
-                overlay.classList.add('opacity-0', 'pointer-events-none');
-                warning.classList.add('hidden');
+                if(btn) {
+                    btn.classList.replace('bg-primary', 'bg-slate-100');
+                    btn.classList.replace('text-white', 'text-slate-700');
+                    btn.classList.replace('hover:bg-emerald-700', 'hover:bg-slate-200');
+                    btn.innerHTML = `<i class="fa-solid fa-user-shield text-primary"></i> <span>已登入</span>`;
+                }
+                if(overlay) overlay.classList.add('opacity-0', 'pointer-events-none');
+                if(warning) warning.classList.add('hidden');
             } else {
-                btn.classList.replace('bg-slate-100', 'bg-primary');
-                btn.classList.replace('text-slate-700', 'text-white');
-                btn.classList.replace('hover:bg-slate-200', 'hover:bg-emerald-700');
-                btn.innerHTML = `<i class="fa-brands fa-google"></i> <span id="authText">實名登入</span>`;
-                overlay.classList.remove('opacity-0', 'pointer-events-none');
-                warning.classList.remove('hidden');
-                document.getElementById('userPoints').innerText = '0';
-                document.getElementById('carbonSaved').innerText = '0.0';
+                if(btn) {
+                    btn.classList.replace('bg-slate-100', 'bg-primary');
+                    btn.classList.replace('text-slate-700', 'text-white');
+                    btn.classList.replace('hover:bg-slate-200', 'hover:bg-emerald-700');
+                    btn.innerHTML = `<i class="fa-brands fa-google"></i> <span>實名登入</span>`;
+                }
+                if(overlay) overlay.classList.remove('opacity-0', 'pointer-events-none');
+                if(warning) warning.classList.remove('hidden');
+                const pts = document.getElementById('userPoints');
+                const crb = document.getElementById('carbonSaved');
+                if(pts) pts.innerText = '0';
+                if(crb) crb.innerText = '0.0';
             }
         }
 
+        const modal = document.getElementById('authModal');
         document.getElementById('authBtn').addEventListener('click', async () => {
             if (currentUser) {
                 await signOut(auth);
                 showToast('已登出系統', 'info');
             } else {
-                try {
-                    await signInWithPopup(auth, provider);
-                    showToast('實名驗證成功');
-                } catch (error) {
-                    showToast('登入失敗', 'info');
+                modal.classList.remove('hidden');
+            }
+        });
+
+        document.getElementById('closeAuthModal').addEventListener('click', () => modal.classList.add('hidden'));
+
+        document.getElementById('googleLoginBtn').addEventListener('click', async () => {
+            try {
+                await signInWithPopup(auth, provider);
+                modal.classList.add('hidden');
+                showToast('Google 驗證成功');
+            } catch (e) {
+                showToast('Google 登入失敗', 'info');
+            }
+        });
+
+        document.getElementById('emailSubmitBtn').addEventListener('click', async () => {
+            const email = document.getElementById('emailInput').value.trim();
+            const pwd = document.getElementById('pwdInput').value.trim();
+            if(!email || pwd.length < 6) {
+                showToast('請提供完整信箱與至少6位密碼', 'info');
+                return;
+            }
+            try {
+                await signInWithEmailAndPassword(auth, email, pwd);
+                modal.classList.add('hidden');
+                showToast('登入成功');
+            } catch (err) {
+                if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+                    try {
+                        await createUserWithEmailAndPassword(auth, email, pwd);
+                        modal.classList.add('hidden');
+                        showToast('帳號建立完成並已登入');
+                    } catch (regErr) {
+                        showToast('登入或註冊失敗', 'info');
+                    }
+                } else {
+                    showToast('認證失敗，請檢查輸入內容', 'info');
                 }
             }
         });
@@ -346,8 +421,10 @@
             onSnapshot(userRef, (docSnap) => {
                 if (docSnap.exists()) {
                     const data = docSnap.data();
-                    document.getElementById('userPoints').innerText = data.points || 0;
-                    document.getElementById('carbonSaved').innerText = (data.carbon || 0).toFixed(1);
+                    const pEl = document.getElementById('userPoints');
+                    const cEl = document.getElementById('carbonSaved');
+                    if(pEl) pEl.innerText = data.points || 0;
+                    if(cEl) cEl.innerText = (data.carbon || 0).toFixed(1);
                 }
             });
         }
@@ -355,9 +432,7 @@
         onAuthStateChanged(auth, (user) => {
             currentUser = user;
             updateAuthUI();
-            if (user) {
-                initUserDoc(user.uid);
-            }
+            if (user) initUserDoc(user.uid);
         });
 
         function getStatusBadge(code, text) {
@@ -379,13 +454,14 @@
 
         function renderFeed(dataList) {
             const container = document.getElementById('feedContainer');
+            if(!container) return;
             container.innerHTML = '';
             
             dataList.forEach((item, index) => {
                 const colors = ['bg-indigo-500', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500', 'bg-cyan-500'];
                 const avatarColor = colors[index % colors.length];
-                const transportTags = item.transports.map(t => `<span class="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200">${t}</span>`).join('');
-                const timeString = item.createdAt ? new Date(item.createdAt.seconds * 1000).toLocaleString() : '剛剛';
+                const transportTags = (item.transports || []).map(t => `<span class="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200">${t}</span>`).join('');
+                const timeString = item.createdAt ? new Date(item.createdAt.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '剛剛';
 
                 const card = `
                     <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
@@ -397,7 +473,7 @@
                                     <div class="text-xs text-slate-500">${timeString} · ${item.station}</div>
                                 </div>
                             </div>
-                            ${getStatusBadge(item.statusCode, item.status)}
+                            ${getStatusBadge(item.statusCode || 0, item.status || "AI 彙整中")}
                         </div>
                         ${transportTags ? `<div class="flex gap-1 flex-wrap mb-2">${transportTags} ${item.routeTime ? `<span class="text-[10px] text-slate-400 py-0.5">(${item.routeTime})</span>` : ''}</div>` : ''}
                         <p class="text-sm text-slate-700 mb-3 leading-relaxed">${item.content}</p>
@@ -417,14 +493,30 @@
         const q = query(collection(db, "feedbacks"), orderBy("createdAt", "desc"));
         onSnapshot(q, (snapshot) => {
             localFeedbacks = [];
-            snapshot.forEach((doc) => {
-                localFeedbacks.push({ id: doc.id, ...doc.data() });
-            });
+            snapshot.forEach((d) => localFeedbacks.push({ id: d.id, ...d.data() }));
             renderFeed(localFeedbacks);
-            if(currentRole === 'admin' && chartInstances.station) {
-                updateDashboardStats();
-            }
+            if(currentRole === 'admin' && chartInstances.station) updateDashboardStats();
         });
+
+        async function analyzeWithGemini(text) {
+            if(!runtimeGeminiKey) return null;
+            try {
+                const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${runtimeGeminiKey}`;
+                const prompt = `請分析以下市民交通回饋，並以嚴格JSON格式回傳：{"category":"微型運具調度|無障礙與步行|班次銜接|其他建議","sentiment":"positive|negative|neutral"}。文本：${text}`;
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }],
+                        generationConfig: { responseMimeType: "application/json" }
+                    })
+                });
+                const data = await res.json();
+                return JSON.parse(data.candidates[0].content.parts[0].text);
+            } catch (err) {
+                return null;
+            }
+        }
 
         document.getElementById('feedbackForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -450,19 +542,25 @@
             const steps = ['ai-step-1', 'ai-step-2', 'ai-step-3'];
             for(let id of steps) {
                 document.getElementById(id).classList.remove('opacity-0');
-                await new Promise(r => setTimeout(r, 600));
+                await new Promise(r => setTimeout(r, 400));
             }
 
             const content = document.getElementById('content').value;
             let category = "其他建議";
             let sentiment = "neutral";
-            
-            if(content.includes("腳踏車") || content.includes("YouBike") || transports.includes("微型運具 (YouBike)")) {
-                category = "微型運具調度"; sentiment = "negative";
-            } else if (content.includes("公車") || content.includes("時間")) {
-                category = "班次銜接"; sentiment = content.includes("好") ? "positive" : "negative";
-            } else if (content.includes("路") || transports.includes("步行/無障礙")) {
-                category = "無障礙與步行"; sentiment = "negative";
+
+            const aiResult = await analyzeWithGemini(content);
+            if(aiResult && aiResult.category) {
+                category = aiResult.category;
+                sentiment = aiResult.sentiment;
+            } else {
+                if(content.includes("車") || transports.includes("微型運具 (YouBike)")) {
+                    category = "微型運具調度"; sentiment = "negative";
+                } else if (content.includes("公車") || content.includes("班次")) {
+                    category = "班次銜接"; sentiment = content.includes("好") ? "positive" : "negative";
+                } else if (content.includes("路") || transports.includes("步行/無障礙")) {
+                    category = "無障礙與步行"; sentiment = "negative";
+                }
             }
 
             const newDoc = {
@@ -501,6 +599,7 @@
 
         function renderNavTabs() {
             const nav = document.getElementById('navTabs');
+            if(!nav) return;
             if (currentRole === 'user') {
                 nav.innerHTML = `
                     <button id="tab-feed" class="flex-1 py-3 text-center tab-active transition"><i class="fa-solid fa-comments mb-1 block text-lg"></i><span class="text-xs">佈告欄</span></button>
@@ -561,9 +660,9 @@
             let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; 
             csvContent += "發生站點,運具類型,特定班次時間,AI意見分類,AI情緒判定,處理進度,民眾回饋內容\n";
             localFeedbacks.forEach(f => {
-                const tStr = f.transports.join('; ');
-                const content = `"${f.content.replace(/"/g, '""').replace(/\n/g, ' ')}"`;
-                csvContent += `${f.station},${tStr},${f.routeTime},${f.ai_category},${f.ai_sentiment},${f.status},${content}\n`;
+                const tStr = (f.transports || []).join('; ');
+                const content = `"${(f.content || '').replace(/"/g, '""').replace(/\n/g, ' ')}"`;
+                csvContent += `${f.station},${tStr},${f.routeTime || ''},${f.ai_category},${f.ai_sentiment},${f.status},${content}\n`;
             });
             const link = document.createElement("a");
             link.setAttribute("href", encodeURI(csvContent));
@@ -608,9 +707,10 @@
             let senCount = { 'positive': 0, 'neutral': 0, 'negative': 0 };
 
             localFeedbacks.forEach(f => {
-                if(f.station.includes('LB07')) sCount['LB07']++;
-                else if(f.station.includes('LB08')) sCount['LB08']++;
-                else if(f.station.includes('LB06')) sCount['LB06']++;
+                const st = f.station || '';
+                if(st.includes('LB07')) sCount['LB07']++;
+                else if(st.includes('LB08')) sCount['LB08']++;
+                else if(st.includes('LB06')) sCount['LB06']++;
                 else sCount['其他']++;
 
                 if(cCount[f.ai_category] !== undefined) cCount[f.ai_category]++;
