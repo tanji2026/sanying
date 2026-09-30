@@ -538,7 +538,6 @@
             const content = document.getElementById('content').value;
             
             try {
-                // Call AI analysis (This relies on the updated backend index.js)
                 const analyzeFeedback = httpsCallable(functions, 'analyzeFeedback');
                 const result = await analyzeFeedback({ content });
                 const aiResult = result.data || {};
@@ -706,8 +705,7 @@
                                 <div>
                                     <div class="text-sm font-bold text-dark flex items-center gap-1">${item.authorName || '匿名市民'}</div>
                                     <div class="text-[10px] text-slate-500 flex items-center gap-1 flex-wrap">
-                                        <span>${item.time || ''}</span>
-                                        ${item.station ? `<span class="mx-1">•</span><span class="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">${stationDisplay}</span>` : ''}
+                                        <span>${item.time \vert{}\vert{} ''}</span>${item.station ? `<span class="mx-1">•</span><span class="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">${stationDisplay}</span>` : ''}
                                     </div>
                                 </div>
                             </div>
@@ -716,8 +714,7 @@
                             </span>
                         </div>
                         ${transportTags ? `<div class="flex gap-1 flex-wrap mb-2">${transportTags}</div>` : ''}
-                        <p class="text-sm text-slate-700 mb-1 leading-relaxed">${item.content}</p>
-                        ${photoHtml}
+                        <p class="text-sm text-slate-700 mb-1 leading-relaxed">${item.content}</p>${photoHtml}
                         <div class="mt-3 pt-3 border-t border-slate-50 flex items-center gap-2">
                             <span class="bg-blue-50 text-secondary border border-blue-100 px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1">
                                 <i class="fa-solid fa-robot"></i> AI 議題歸納：${item.ai_category}
@@ -743,13 +740,14 @@
             if(e.key === 'Enter') sendChatMessage();
         };
 
+        // ====== 更新：增強錯誤捕捉與對話排版的 AI 客服功能 ======
         window.sendChatMessage = async () => {
             const input = document.getElementById('chatInput');
             const msg = input.value.trim();
             if(!msg) return;
             
             const chatBox = document.getElementById('chatMessages');
-            chatBox.insertAdjacentHTML('beforeend', `<div class="chat-bubble-user p-2.5 self-end max-w-[85%] shadow-sm fade-in">${msg}</div>`);
+            chatBox.insertAdjacentHTML('beforeend', `<div class="chat-bubble-user p-2.5 self-end max-w-[85%] shadow-sm fade-in">${msg.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>`);
             input.value = '';
             chatBox.scrollTop = chatBox.scrollHeight;
 
@@ -765,11 +763,20 @@
             try {
                 const chatCall = httpsCallable(functions, 'chatWithTanji');
                 const result = await chatCall({ message: msg });
-                document.getElementById(loadingId).remove();
-                chatBox.insertAdjacentHTML('beforeend', `<div class="chat-bubble-ai p-3 self-start max-w-[85%] shadow-sm fade-in">${result.data.reply}</div>`);
+                
+                const loader = document.getElementById(loadingId);
+                if(loader) loader.remove();
+                
+                let replyHtml = result.data.reply || "抱歉，我沒有收到回應。";
+                // 處理 AI 回傳的粗體與換行，讓畫面更易讀
+                replyHtml = replyHtml.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+                
+                chatBox.insertAdjacentHTML('beforeend', `<div class="chat-bubble-ai p-3 self-start max-w-[85%] shadow-sm fade-in">${replyHtml}</div>`);
             } catch(e) {
-                document.getElementById(loadingId).remove();
-                chatBox.insertAdjacentHTML('beforeend', `<div class="chat-bubble-ai p-3 self-start max-w-[85%] shadow-sm text-red-500 fade-in">網路似乎有點狀況，請稍後再試喔！</div>`);
+                console.error("Chat API Error:", e);
+                const loader = document.getElementById(loadingId);
+                if(loader) loader.remove();
+                chatBox.insertAdjacentHTML('beforeend', `<div class="chat-bubble-ai p-3 self-start max-w-[85%] shadow-sm text-red-500 fade-in">連線異常，請稍後再試喔！<br><span class="text-[10px] opacity-70">錯誤代碼: ${e.message}</span></div>`);
             }
             chatBox.scrollTop = chatBox.scrollHeight;
         };
