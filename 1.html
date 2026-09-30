@@ -1,735 +1,246 @@
+
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>三鶯永續行：AI 智慧交通公民共創平台</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#27AE60',
-                        secondary: '#2980B9',
-                        accent: '#F39C12',
-                        dark: '#2C3E50',
-                        light: '#F8FAFC',
-                        tanji: '#E67E22'
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'Noto Sans TC', 'sans-serif'],
-                    }
-                }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>三鶯永續行：專案執行摘要懶人包</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              green: '#27AE60',
+              blue: '#2980B9',
+              dark: '#0F172A',
+              orange: '#E67E22',
+              surface: '#F8FAFC'
             }
+          },
+          fontFamily: {
+            sans: ['"Noto Sans TC"', 'Inter', 'sans-serif']
+          }
         }
-    </script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap');
-        body { font-family: 'Inter', 'Noto Sans TC', sans-serif; -webkit-tap-highlight-color: transparent; }
-        .tab-active { border-bottom: 3px solid #27AE60; color: #27AE60; font-weight: 700; }
-        .tab-inactive { color: #64748b; font-weight: 500; }
-        .fade-in { animation: fadeIn 0.3s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #27AE60; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .custom-checkbox input:checked + div { background-color: #27AE60; border-color: #27AE60; color: white; }
-        .toast-enter { animation: slideInRight 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-        .toast-leave { animation: slideOutRight 0.4s ease-in forwards; }
-        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        @keyframes slideOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
-        .hero-bg { background: linear-gradient(135deg, rgba(39, 174, 96, 0.95), rgba(41, 128, 185, 0.95)), url('https://images.unsplash.com/photo-1596484552834-6a58f850d0f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80') center/cover; }
-    </style>
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #0B1120;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+    .slide-canvas {
+      width: 1280px;
+      height: 720px;
+      max-width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #FFFFFF;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+      border-radius: 12px;
+    }
+    .watermark-bg {
+      position: absolute;
+      right: -40px;
+      bottom: -40px;
+      font-size: 260px;
+      color: rgba(39, 174, 96, 0.03);
+      pointer-events: none;
+      z-index: 0;
+    }
+  </style>
 </head>
-<body class="bg-light text-slate-800 min-h-screen flex flex-col relative overflow-x-hidden">
-    <div id="toast-container" class="fixed top-20 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+<body class="font-sans antialiased text-slate-800">
+  <!-- Slide 16:9 Presentation Canvas -->
+  <div class="slide-canvas p-8 justify-between">
+    <i class="fa-solid fa-leaf watermark-bg"></i>
 
-    <header class="bg-white shadow-sm sticky top-0 z-40">
-        <div class="max-w-md mx-auto px-4 py-3 flex justify-between items-center md:max-w-3xl">
-            <div class="flex items-center gap-2">
-                <div class="text-primary font-bold text-xl tracking-tight flex items-center gap-2">
-                    <i class="fa-solid fa-leaf"></i>
-                    <span>三鶯永續行</span>
-                </div>
-                <select id="roleSelector" class="ml-2 text-[10px] bg-slate-100 border border-slate-200 text-slate-500 rounded px-1 py-0.5 outline-none cursor-pointer hover:bg-slate-200">
-                    <option value="user">市民視角</option>
-                    <option value="admin">管理員視角</option>
-                </select>
-                <button id="configKeyBtn" class="text-slate-400 hover:text-slate-600 p-1 text-xs" title="設定展示金鑰">
-                    <i class="fa-solid fa-gear"></i>
-                </button>
-            </div>
-            <button id="authBtn" class="bg-primary text-white px-4 py-1.5 rounded-full text-sm font-medium hover:bg-emerald-700 transition shadow-sm flex items-center gap-2">
-                <i class="fa-brands fa-google"></i> <span id="authText">實名登入</span>
-            </button>
+    <header class="relative z-10 flex justify-between items-start border-b border-slate-200 pb-4">
+      <div>
+        <div class="flex items-center gap-2 mb-1.5">
+          <span class="bg-emerald-100 text-brand-green text-[11px] font-extrabold px-2.5 py-0.5 rounded tracking-wider uppercase flex items-center gap-1.5">
+            <i class="fa-solid fa-award"></i> 北聯大 U-STEP 永續行動獎 ｜ 永續創新組
+          </span>
+          <span class="bg-blue-100 text-brand-blue text-[11px] font-bold px-2 py-0.5 rounded">
+            專案執行摘要 01/20
+          </span>
         </div>
+        <h1 class="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+          三鶯永續行：AI 智慧交通公民共創平台
+          <span class="text-xs bg-slate-800 text-white font-medium px-2 py-0.5 rounded-full">最小可行性產品 MVP 已上線</span>
+        </h1>
+        <p class="text-xs text-slate-500 font-medium mt-0.5">
+          提案團隊：碳吉 TanJi（臺北大學 公行所 殷可盈 ✕ 都計所 彭冠博）
+        </p>
+      </div>
+      <div class="flex items-center gap-3 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg shadow-sm">
+        <div class="text-right">
+          <div class="text-[10px] text-slate-400 font-semibold uppercase">核心標語</div>
+          <div class="text-xs font-black text-brand-green">實名驗證集點數 ✕ 匿名發文保隱私</div>
+        </div>
+        <div class="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-sm shadow">
+          <i class="fa-solid fa-route"></i>
+        </div>
+      </div>
     </header>
 
-    <div id="authModal" class="hidden fixed inset-0 bg-slate-900/50 z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
-            <h3 class="text-lg font-bold text-dark mb-2">身分登入與驗證</h3>
-            <p class="text-xs text-slate-500 mb-4">輸入信箱進行登入或自動建立帳號</p>
-            <div class="space-y-3">
-                <input type="email" id="emailInput" placeholder="電子郵件" class="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 text-sm outline-none focus:ring-2 focus:ring-primary">
-                <input type="password" id="pwdInput" placeholder="密碼（至少6碼）" class="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 text-sm outline-none focus:ring-2 focus:ring-primary">
-                <button id="emailSubmitBtn" class="w-full bg-primary text-white rounded-xl py-2.5 text-sm font-bold hover:bg-emerald-700 transition">信箱登入 / 註冊</button>
-                <div class="relative flex py-1 items-center">
-                    <div class="flex-grow border-t border-slate-200"></div>
-                    <span class="flex-shrink mx-2 text-[10px] text-slate-400">或</span>
-                    <div class="flex-grow border-t border-slate-200"></div>
-                </div>
-                <button id="googleLoginBtn" class="w-full bg-slate-100 border border-slate-200 text-slate-700 rounded-xl py-2.5 text-sm font-bold hover:bg-slate-200 transition flex items-center justify-center gap-2">
-                    <i class="fa-brands fa-google text-rose-500"></i> Google 快速登入
-                </button>
-                <button id="closeAuthModal" class="w-full text-slate-400 text-xs py-1">取消返回</button>
+    <main class="relative z-10 grid grid-cols-4 gap-4 my-auto py-2">
+      
+      <!-- Pillar 1: 現況痛點與數據冰山 -->
+      <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 flex flex-col justify-between hover:border-slate-300 transition-all shadow-sm">
+        <div>
+          <div class="flex items-center gap-2 mb-2">
+            <span class="w-6 h-6 rounded bg-rose-100 text-rose-600 flex items-center justify-center text-xs font-black">01</span>
+            <h2 class="text-sm font-black text-slate-900">現況痛點：數據冰山盲區</h2>
+          </div>
+          <p class="text-[11px] text-slate-500 mb-3 leading-relaxed">
+            三鶯線通車肩負減碳責任，但現行營運高度偏重票證「冷數據」，難以探知運具移轉阻礙。
+          </p>
+          <div class="space-y-2 text-[11px]">
+            <div class="bg-white p-2 rounded-lg border border-slate-200">
+              <span class="font-bold text-slate-700 block text-[10px] uppercase text-rose-500">水面上：可見現況</span>
+              進出站客運量、搭乘人次、尖峰旅次（缺乏質性動機）。
             </div>
+            <div class="bg-rose-50 p-2 rounded-lg border border-rose-200 text-rose-800">
+              <span class="font-bold block text-[10px] uppercase text-rose-600">水面下：未知痛點</span>
+              YouBike車柱常空、轉乘班距落差、無障礙斷點、天候驟雨。
+            </div>
+          </div>
         </div>
-    </div>
-
-    <main class="flex-grow flex flex-col items-center w-full">
-        <section class="w-full hero-bg text-white py-8 px-4 text-center shadow-inner">
-            <h1 class="text-2xl font-bold mb-2 tracking-wide">AI 智慧交通公民共創平台</h1>
-            <p class="text-sm opacity-90 max-w-md mx-auto leading-relaxed">
-                實名驗證集點數，匿名發文保隱私。<br>真實搭乘體驗，優化綠色交通起點。
-            </p>
-        </section>
-
-        <div class="w-full max-w-md md:max-w-3xl bg-white shadow-sm sticky top-[60px] z-30">
-            <div class="flex w-full" id="navTabs"></div>
+        <div class="text-[10px] bg-slate-200/60 text-slate-600 px-2 py-1 rounded text-center mt-3 font-medium">
+          痛點不明 ➔ 民眾退回汽機車 ➔ 資源錯位
         </div>
+      </div>
 
-        <div class="w-full max-w-md md:max-w-3xl p-4 flex-grow relative pb-24">
-            
-            <div id="view-feed" class="fade-in">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="font-bold text-lg text-dark">在地交流動態</h2>
-                    <span class="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full"><i class="fa-solid fa-shield-halved text-emerald-500"></i> AI 防護網啟用中</span>
-                </div>
-                <div id="feedContainer" class="space-y-4"></div>
-            </div>
-
-            <div id="view-submit" class="hidden fade-in">
-                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
-                    <div class="mb-4 flex justify-between items-start">
-                        <div>
-                            <h2 class="font-bold text-lg text-dark mb-1">分享搭乘體驗</h2>
-                            <p class="text-xs text-slate-500">系統自動進行語意分析並匿名發佈</p>
-                        </div>
-                        <div class="flex flex-col items-end gap-1">
-                            <div class="bg-orange-50 border border-orange-100 text-tanji px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm">
-                                <i class="fa-solid fa-coins"></i> +10 碳吉
-                            </div>
-                            <div class="bg-green-50 border border-green-100 text-green-600 px-3 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 shadow-sm">
-                                <i class="fa-solid fa-leaf"></i> 減碳獎勵
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div id="authWarning" class="bg-amber-50 text-amber-700 p-3 rounded-lg text-sm mb-4 border border-amber-200 flex items-start gap-2">
-                        <i class="fa-solid fa-circle-exclamation mt-0.5"></i>
-                        <span>點擊右上角實名登入啟用發文與集點功能，真實身分將加密保護</span>
-                    </div>
-
-                    <form id="feedbackForm" class="space-y-4 relative">
-                        <div id="formOverlay" class="absolute inset-0 bg-white/70 backdrop-blur-[1px] z-10 rounded-xl transition-all duration-300"></div>
-                        
-                        <div>
-                            <label class="block text-sm font-semibold text-slate-700 mb-1.5">發生站點 / 區域 <span class="text-red-500">*</span></label>
-                            <select id="station" required class="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition text-sm appearance-none">
-                                <option value="" disabled selected>選擇相關站點</option>
-                                <option value="LB08 鶯歌車站">LB08 鶯歌車站</option>
-                                <option value="LB07 臺北大學站">LB07 臺北大學站</option>
-                                <option value="LB06 三峽站">LB06 三峽站</option>
-                                <option value="鶯歌老街周邊">鶯歌老街周邊</option>
-                                <option value="三峽老街周邊">三峽老街周邊</option>
-                                <option value="其他沿線站點">其他沿線站點</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-semibold text-slate-700 mb-1.5">相關運具 (可多選) <span class="text-red-500">*</span></label>
-                            <div class="grid grid-cols-2 gap-2" id="transportOptions">
-                                <label class="custom-checkbox cursor-pointer relative">
-                                    <input type="checkbox" value="捷運三鶯線" class="peer sr-only" name="transport">
-                                    <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-center font-medium text-slate-600 transition-all hover:bg-slate-100 peer-checked:bg-primary peer-checked:text-white peer-checked:border-primary">
-                                        <i class="fa-solid fa-train-subway mr-1"></i> 捷運
-                                    </div>
-                                </label>
-                                <label class="custom-checkbox cursor-pointer relative">
-                                    <input type="checkbox" value="公車/客運" class="peer sr-only" name="transport">
-                                    <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-center font-medium text-slate-600 transition-all hover:bg-slate-100 peer-checked:bg-primary peer-checked:text-white peer-checked:border-primary">
-                                        <i class="fa-solid fa-bus mr-1"></i> 公車/客運
-                                    </div>
-                                </label>
-                                <label class="custom-checkbox cursor-pointer relative">
-                                    <input type="checkbox" value="微型運具 (YouBike)" class="peer sr-only" name="transport">
-                                    <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-center font-medium text-slate-600 transition-all hover:bg-slate-100 peer-checked:bg-primary peer-checked:text-white peer-checked:border-primary">
-                                        <i class="fa-solid fa-bicycle mr-1"></i> YouBike
-                                    </div>
-                                </label>
-                                <label class="custom-checkbox cursor-pointer relative">
-                                    <input type="checkbox" value="步行/無障礙" class="peer sr-only" name="transport">
-                                    <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-center font-medium text-slate-600 transition-all hover:bg-slate-100 peer-checked:bg-primary peer-checked:text-white peer-checked:border-primary">
-                                        <i class="fa-solid fa-person-walking mr-1"></i> 步行
-                                    </div>
-                                </label>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-semibold text-slate-700 mb-1.5">特定班次或時間 <span class="text-slate-400 font-normal">(選填)</span></label>
-                            <input type="text" id="routeTime" placeholder="例如：916公車、早上 08:30" class="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition text-sm">
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-semibold text-slate-700 mb-1.5">實際狀況或優化建議 <span class="text-red-500">*</span></label>
-                            <textarea id="content" required rows="4" placeholder="描述實際搭乘體驗或建議" class="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition text-sm resize-none"></textarea>
-                        </div>
-                        
-                        <div id="aiProcessZone" class="hidden bg-slate-50 rounded-xl p-4 border border-slate-200 text-sm shadow-inner">
-                            <div class="flex items-center gap-3 text-primary font-bold mb-2">
-                                <span class="loader"></span> <span>AI 分析引擎運算中...</span>
-                            </div>
-                            <ul class="text-xs text-slate-500 ml-8 space-y-1">
-                                <li><i class="fa-solid fa-check text-emerald-500 mr-1 opacity-0 transition-opacity" id="ai-step-1"></i> 執行惡意言論與雜訊過濾</li>
-                                <li><i class="fa-solid fa-check text-emerald-500 mr-1 opacity-0 transition-opacity" id="ai-step-2"></i> 萃取特徵與情緒歸類</li>
-                                <li><i class="fa-solid fa-check text-emerald-500 mr-1 opacity-0 transition-opacity" id="ai-step-3"></i> 生成結構化意見標籤</li>
-                            </ul>
-                        </div>
-
-                        <button type="submit" id="submitBtn" class="w-full bg-primary text-white rounded-xl py-3.5 font-bold shadow-md hover:bg-emerald-700 transition active:scale-[0.98] flex justify-center items-center gap-2">
-                            <i class="fa-regular fa-paper-plane"></i> 確認發佈
-                        </button>
-                    </form>
-                </div>
-            </div>
-
-            <div id="view-rewards" class="hidden fade-in">
-                <div class="grid grid-cols-2 gap-3 mb-4">
-                    <div class="bg-gradient-to-br from-orange-500 to-tanji rounded-2xl p-5 text-white shadow-lg relative overflow-hidden">
-                        <i class="fa-solid fa-coins absolute -right-2 -bottom-2 text-6xl opacity-20"></i>
-                        <h2 class="font-medium text-orange-100 text-xs mb-1">累積碳吉 (TanJi)</h2>
-                        <div class="text-3xl font-extrabold flex items-baseline gap-1 mb-2">
-                            <span id="userPoints">0</span> <span class="text-sm font-medium opacity-80">pts</span>
-                        </div>
-                        <div class="text-[10px] bg-white/20 px-2 py-1 rounded inline-block backdrop-blur-sm">距離兌換門檻差 100 點</div>
-                    </div>
-
-                    <div class="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-5 text-white shadow-lg relative overflow-hidden">
-                        <i class="fa-solid fa-leaf absolute -right-2 -bottom-2 text-6xl opacity-20"></i>
-                        <h2 class="font-medium text-emerald-100 text-xs mb-1">綠色通勤減碳量</h2>
-                        <div class="text-3xl font-extrabold flex items-baseline gap-1 mb-2">
-                            <span id="carbonSaved">0.0</span> <span class="text-sm font-medium opacity-80">kg</span>
-                        </div>
-                        <div class="text-[10px] bg-white/20 px-2 py-1 rounded inline-block backdrop-blur-sm">環境保護貢獻</div>
-                    </div>
-                </div>
-
-                <div class="flex justify-between items-center mb-3 mt-6">
-                    <h3 class="font-bold text-dark">意見追蹤與紀錄</h3>
-                    <span class="text-xs text-slate-500">透明化治理進度</span>
-                </div>
-                
-                <div class="space-y-3" id="rewardHistory"></div>
-            </div>
-
-            <div id="view-dashboard" class="hidden fade-in">
-                <div class="flex justify-between items-end mb-4">
-                    <div>
-                        <h2 class="font-bold text-xl text-dark">交通治理儀表板</h2>
-                        <p class="text-xs text-slate-500">決策單位視角</p>
-                    </div>
-                    <button id="exportCsvBtn" class="bg-dark text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-slate-700 transition shadow-sm flex items-center gap-2">
-                        <i class="fa-solid fa-download"></i> 匯出報表
-                    </button>
-                </div>
-                
-                <div class="grid grid-cols-2 gap-3 mb-4">
-                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-center items-center">
-                        <span class="text-xs font-bold text-slate-500 mb-1">累計有效回饋 (筆)</span>
-                        <span class="text-3xl font-extrabold text-primary" id="stat-total">0</span>
-                    </div>
-                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-center items-center">
-                        <span class="text-xs font-bold text-slate-500 mb-1">AI 雜訊攔截率</span>
-                        <span class="text-3xl font-extrabold text-secondary">92%</span>
-                    </div>
-                </div>
-
-                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mb-4">
-                    <h3 class="text-sm font-bold text-slate-700 mb-3 text-center">各站點 / 區域意見熱區統計</h3>
-                    <div class="relative h-48 w-full">
-                        <canvas id="stationChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mb-4">
-                    <h3 class="text-sm font-bold text-slate-700 mb-3 text-center">民眾意見自動歸類 (NLP 分群)</h3>
-                    <div class="relative h-56 w-full">
-                        <canvas id="categoryChart"></canvas>
-                    </div>
-                </div>
-                
-                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-                    <h3 class="text-sm font-bold text-slate-700 mb-3 text-center">民眾搭乘體驗情緒趨勢</h3>
-                    <div class="relative h-48 w-full">
-                        <canvas id="sentimentChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
+      <!-- Pillar 2: 解方架構與公民共創 -->
+      <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 flex flex-col justify-between hover:border-slate-300 transition-all shadow-sm">
+        <div>
+          <div class="flex items-center gap-2 mb-2">
+            <span class="w-6 h-6 rounded bg-blue-100 text-brand-blue flex items-center justify-center text-xs font-black">02</span>
+            <h2 class="text-sm font-black text-slate-900">公民賦權：零阻力採集</h2>
+          </div>
+          <p class="text-[11px] text-slate-500 mb-3 leading-relaxed">
+            純網頁免下載架構（PWA），將主觀體感轉化為結構化空間地理指標。
+          </p>
+          <ul class="space-y-2 text-[11px] text-slate-700">
+            <li class="flex items-start gap-1.5">
+              <i class="fa-solid fa-shield-halved text-brand-blue mt-0.5 text-xs"></i>
+              <span><strong>實名防偽、匿名保私</strong>：OAuth第三方快速驗證防機器人，發文去識別化。</span>
+            </li>
+            <li class="flex items-start gap-1.5">
+              <i class="fa-solid fa-map-pin text-brand-blue mt-0.5 text-xs"></i>
+              <span><strong>三鶯 12 站精準定位</strong>：涵蓋LB01頂埔至LB12鶯桃福德，附帶運具與天候情境。</span>
+            </li>
+            <li class="flex items-start gap-1.5">
+              <i class="fa-solid fa-camera text-brand-blue mt-0.5 text-xs"></i>
+              <span><strong>現場照片實證</strong>：支援即時拍照佐證，供權責單位查驗修繕。</span>
+            </li>
+          </ul>
         </div>
+        <div class="text-[10px] bg-blue-100/70 text-brand-blue px-2 py-1 rounded text-center mt-3 font-bold">
+          雙軌認證機制 ｜ 提高發聲意願
+        </div>
+      </div>
+
+      <!-- Pillar 3: 核心技術與 AI 賦能 -->
+      <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 flex flex-col justify-between hover:border-slate-300 transition-all shadow-sm">
+        <div>
+          <div class="flex items-center gap-2 mb-2">
+            <span class="w-6 h-6 rounded bg-emerald-100 text-brand-green flex items-center justify-center text-xs font-black">03</span>
+            <h2 class="text-sm font-black text-slate-900">核心技術：LLM 語意雙引擎</h2>
+          </div>
+          <p class="text-[11px] text-slate-500 mb-3 leading-relaxed">
+            透過雲端無伺服器架構（Cloud Functions），即時萃取非結構化市民質性回饋。
+          </p>
+          <div class="space-y-2 text-[11px]">
+            <div class="bg-white p-2 rounded-lg border border-slate-200">
+              <div class="font-bold text-slate-800 text-[10px] flex items-center gap-1">
+                <i class="fa-solid fa-brain text-emerald-600"></i> 後端：Gemini 議題與情緒判定
+              </div>
+              <p class="text-[10px] text-slate-500 mt-0.5">自動標籤微型運具、無障礙、班次銜接，過濾無效謾罵。</p>
+            </div>
+            <div class="bg-white p-2 rounded-lg border border-slate-200">
+              <div class="font-bold text-slate-800 text-[10px] flex items-center gap-1">
+                <i class="fa-solid fa-robot text-brand-orange"></i> 前端：碳吉小幫手 AI 客服
+              </div>
+              <p class="text-[10px] text-slate-500 mt-0.5">24 小時解答平台操作、點數誘因與三鶯交通資訊。</p>
+            </div>
+          </div>
+        </div>
+        <div class="text-[10px] bg-emerald-100/70 text-brand-green px-2 py-1 rounded text-center mt-3 font-bold">
+          毫秒級結構化 ｜ 降低 85% 人工整理耗時
+        </div>
+      </div>
+
+      <!-- Pillar 4: 循環效益與決策支援 -->
+      <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 flex flex-col justify-between hover:border-slate-300 transition-all shadow-sm">
+        <div>
+          <div class="flex items-center gap-2 mb-2">
+            <span class="w-6 h-6 rounded bg-orange-100 text-brand-orange flex items-center justify-center text-xs font-black">04</span>
+            <h2 class="text-sm font-black text-slate-900">永續循環：數據治理 ✕ 商圈</h2>
+          </div>
+          <p class="text-[11px] text-slate-500 mb-3 leading-relaxed">
+            雙向賦能主管機關與在地商圈，打造具實質價值的永續正向循環。
+          </p>
+          <div class="space-y-2 text-[11px] text-slate-700">
+            <div class="flex items-start gap-1.5">
+              <i class="fa-solid fa-chart-pie text-brand-orange mt-0.5 text-xs"></i>
+              <span><strong>交通治理儀表板</strong>：意見熱點圖、議題佔比、情緒矩陣，支援 CSV 匯出報表。</span>
+            </div>
+            <div class="flex items-start gap-1.5">
+              <i class="fa-solid fa-coins text-brand-orange mt-0.5 text-xs"></i>
+              <span><strong>碳吉點數模型</strong>：發聲即集點（+10）、換算個人減碳量（kg），成就感可見。</span>
+            </div>
+            <div class="flex items-start gap-1.5">
+              <i class="fa-solid fa-store text-brand-orange mt-0.5 text-xs"></i>
+              <span><strong>在地 O2O 循環</strong>：點數折抵三峽、鶯歌商圈店家消費，促進綠色經濟。</span>
+            </div>
+          </div>
+        </div>
+        <div class="text-[10px] bg-orange-100/70 text-brand-orange px-2 py-1 rounded text-center mt-3 font-bold">
+          由下而上公私協力 ｜ 消除隱性通勤斷點
+        </div>
+      </div>
+
     </main>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, doc, getDoc, setDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyBFlXwGj14KC5GMY-XhwaQxRbOeCaPr7GY",
-            authDomain: "sanying-e8ba1.firebaseapp.com",
-            projectId: "sanying-e8ba1",
-            storageBucket: "sanying-e8ba1.firebasestorage.app",
-            messagingSenderId: "833697195100",
-            appId: "1:833697195100:web:a60b9bc21990afeeffb299"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const provider = new GoogleAuthProvider();
-
-        let currentUser = null;
-        let currentRole = 'user';
-        let chartInstances = {};
-        let localFeedbacks = [];
-        let runtimeGeminiKey = localStorage.getItem('demo_gemini_key') || "";
-
-        function showToast(message, type = 'success') {
-            const container = document.getElementById('toast-container');
-            if(!container) return;
-            const toast = document.createElement('div');
-            const icon = type === 'success' ? '<i class="fa-solid fa-circle-check text-emerald-500"></i>' : '<i class="fa-solid fa-circle-info text-blue-500"></i>';
-            const border = type === 'success' ? 'border-emerald-200' : 'border-blue-200';
-            
-            toast.className = `bg-white px-4 py-3 rounded-xl shadow-lg border ${border} text-sm font-bold text-slate-700 flex items-center gap-3 toast-enter pointer-events-auto`;
-            toast.innerHTML = `${icon} <span>${message}</span>`;
-            container.appendChild(toast);
-            
-            setTimeout(() => {
-                toast.classList.replace('toast-enter', 'toast-leave');
-                setTimeout(() => toast.remove(), 400);
-            }, 3000);
-        }
-
-        document.getElementById('configKeyBtn').addEventListener('click', () => {
-            const current = localStorage.getItem('demo_gemini_key') || "";
-            const input = prompt("請輸入展示用 Gemini API Key（留空則使用本機模擬）：", current);
-            if(input !== null) {
-                runtimeGeminiKey = input.trim();
-                localStorage.setItem('demo_gemini_key', runtimeGeminiKey);
-                showToast(runtimeGeminiKey ? "已儲存展示金鑰" : "切換回本機模擬模式");
-            }
-        });
-
-        function updateAuthUI() {
-            const btn = document.getElementById('authBtn');
-            const overlay = document.getElementById('formOverlay');
-            const warning = document.getElementById('authWarning');
-
-            if (currentUser) {
-                if(btn) {
-                    btn.classList.replace('bg-primary', 'bg-slate-100');
-                    btn.classList.replace('text-white', 'text-slate-700');
-                    btn.classList.replace('hover:bg-emerald-700', 'hover:bg-slate-200');
-                    btn.innerHTML = `<i class="fa-solid fa-user-shield text-primary"></i> <span>已登入</span>`;
-                }
-                if(overlay) overlay.classList.add('opacity-0', 'pointer-events-none');
-                if(warning) warning.classList.add('hidden');
-            } else {
-                if(btn) {
-                    btn.classList.replace('bg-slate-100', 'bg-primary');
-                    btn.classList.replace('text-slate-700', 'text-white');
-                    btn.classList.replace('hover:bg-slate-200', 'hover:bg-emerald-700');
-                    btn.innerHTML = `<i class="fa-brands fa-google"></i> <span>實名登入</span>`;
-                }
-                if(overlay) overlay.classList.remove('opacity-0', 'pointer-events-none');
-                if(warning) warning.classList.remove('hidden');
-                const pts = document.getElementById('userPoints');
-                const crb = document.getElementById('carbonSaved');
-                if(pts) pts.innerText = '0';
-                if(crb) crb.innerText = '0.0';
-            }
-        }
-
-        const modal = document.getElementById('authModal');
-        document.getElementById('authBtn').addEventListener('click', async () => {
-            if (currentUser) {
-                await signOut(auth);
-                showToast('已登出系統', 'info');
-            } else {
-                modal.classList.remove('hidden');
-            }
-        });
-
-        document.getElementById('closeAuthModal').addEventListener('click', () => modal.classList.add('hidden'));
-
-        document.getElementById('googleLoginBtn').addEventListener('click', async () => {
-            try {
-                await signInWithPopup(auth, provider);
-                modal.classList.add('hidden');
-                showToast('Google 驗證成功');
-            } catch (e) {
-                showToast('Google 登入失敗', 'info');
-            }
-        });
-
-        document.getElementById('emailSubmitBtn').addEventListener('click', async () => {
-            const email = document.getElementById('emailInput').value.trim();
-            const pwd = document.getElementById('pwdInput').value.trim();
-            if(!email || pwd.length < 6) {
-                showToast('請提供完整信箱與至少6位密碼', 'info');
-                return;
-            }
-            try {
-                await signInWithEmailAndPassword(auth, email, pwd);
-                modal.classList.add('hidden');
-                showToast('登入成功');
-            } catch (err) {
-                if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
-                    try {
-                        await createUserWithEmailAndPassword(auth, email, pwd);
-                        modal.classList.add('hidden');
-                        showToast('帳號建立完成並已登入');
-                    } catch (regErr) {
-                        showToast('登入或註冊失敗', 'info');
-                    }
-                } else {
-                    showToast('認證失敗，請檢查輸入內容', 'info');
-                }
-            }
-        });
-
-        async function initUserDoc(uid) {
-            const userRef = doc(db, 'users', uid);
-            const userSnap = await getDoc(userRef);
-            if (!userSnap.exists()) {
-                await setDoc(userRef, { points: 0, carbon: 0.0 });
-            }
-            onSnapshot(userRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    const pEl = document.getElementById('userPoints');
-                    const cEl = document.getElementById('carbonSaved');
-                    if(pEl) pEl.innerText = data.points || 0;
-                    if(cEl) cEl.innerText = (data.carbon || 0).toFixed(1);
-                }
-            });
-        }
-
-        onAuthStateChanged(auth, (user) => {
-            currentUser = user;
-            updateAuthUI();
-            if (user) initUserDoc(user.uid);
-        });
-
-        function getStatusBadge(code, text) {
-            const styles = {
-                0: "bg-slate-100 text-slate-600 border-slate-200",
-                1: "bg-blue-50 text-blue-600 border-blue-200",
-                2: "bg-emerald-50 text-emerald-600 border-emerald-200",
-                3: "bg-amber-50 text-amber-600 border-amber-200"
-            };
-            const style = styles[code] || styles[0];
-            return `<span class="text-[10px] px-2 py-0.5 rounded-full border ${style} font-bold whitespace-nowrap"><i class="fa-solid fa-spinner fa-spin-pulse mr-1" style="${code===0?'':'display:none'}"></i>${text}</span>`;
-        }
-
-        function getSentimentBadge(sentiment) {
-            if(sentiment === 'positive') return '<span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-bold">良好體驗</span>';
-            if(sentiment === 'negative') return '<span class="bg-rose-100 text-rose-700 px-2 py-0.5 rounded text-[10px] font-bold">優化建議</span>';
-            return '<span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-[10px] font-bold">中立描述</span>';
-        }
-
-        function renderFeed(dataList) {
-            const container = document.getElementById('feedContainer');
-            if(!container) return;
-            container.innerHTML = '';
-            
-            dataList.forEach((item, index) => {
-                const colors = ['bg-indigo-500', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500', 'bg-cyan-500'];
-                const avatarColor = colors[index % colors.length];
-                const transportTags = (item.transports || []).map(t => `<span class="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200">${t}</span>`).join('');
-                const timeString = item.createdAt ? new Date(item.createdAt.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '剛剛';
-
-                const card = `
-                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-                        <div class="flex justify-between items-start mb-3">
-                            <div class="flex items-center gap-2">
-                                <div class="${avatarColor} text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shadow-sm">U</div>
-                                <div>
-                                    <div class="text-sm font-bold text-dark flex items-center gap-1">匿名市民 <i class="fa-solid fa-circle-check text-blue-500 text-[10px]"></i></div>
-                                    <div class="text-xs text-slate-500">${timeString} · ${item.station}</div>
-                                </div>
-                            </div>
-                            ${getStatusBadge(item.statusCode || 0, item.status || "AI 彙整中")}
-                        </div>
-                        ${transportTags ? `<div class="flex gap-1 flex-wrap mb-2">${transportTags} ${item.routeTime ? `<span class="text-[10px] text-slate-400 py-0.5">(${item.routeTime})</span>` : ''}</div>` : ''}
-                        <p class="text-sm text-slate-700 mb-3 leading-relaxed">${item.content}</p>
-                        <div class="flex justify-between items-center bg-slate-50 p-2 rounded-lg border border-slate-100">
-                            <span class="bg-blue-50 text-secondary border border-blue-100 px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1"><i class="fa-solid fa-robot"></i> ${item.ai_category}</span>
-                            ${getSentimentBadge(item.ai_sentiment)}
-                        </div>
-                    </div>
-                `;
-                container.insertAdjacentHTML('beforeend', card);
-            });
-            
-            const totalEl = document.getElementById('stat-total');
-            if(totalEl) totalEl.innerText = dataList.length;
-        }
-
-        const q = query(collection(db, "feedbacks"), orderBy("createdAt", "desc"));
-        onSnapshot(q, (snapshot) => {
-            localFeedbacks = [];
-            snapshot.forEach((d) => localFeedbacks.push({ id: d.id, ...d.data() }));
-            renderFeed(localFeedbacks);
-            if(currentRole === 'admin' && chartInstances.station) updateDashboardStats();
-        });
-
-        async function analyzeWithGemini(text) {
-            if(!runtimeGeminiKey) return null;
-            try {
-                const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${runtimeGeminiKey}`;
-                const prompt = `請分析以下市民交通回饋，並以嚴格JSON格式回傳：{"category":"微型運具調度|無障礙與步行|班次銜接|其他建議","sentiment":"positive|negative|neutral"}。文本：${text}`;
-                const res = await fetch(endpoint, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt }] }],
-                        generationConfig: { responseMimeType: "application/json" }
-                    })
-                });
-                const data = await res.json();
-                return JSON.parse(data.candidates[0].content.parts[0].text);
-            } catch (err) {
-                return null;
-            }
-        }
-
-        document.getElementById('feedbackForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if(!currentUser) {
-                showToast('發佈前請進行實名登入', 'info');
-                return;
-            }
-
-            const btn = document.getElementById('submitBtn');
-            const aiZone = document.getElementById('aiProcessZone');
-            const checkboxes = document.querySelectorAll('input[name="transport"]:checked');
-            const transports = Array.from(checkboxes).map(cb => cb.value);
-
-            if(transports.length === 0) {
-                showToast('請至少選擇一項運具', 'info');
-                return;
-            }
-
-            btn.disabled = true;
-            btn.classList.add('opacity-50');
-            aiZone.classList.remove('hidden');
-
-            const steps = ['ai-step-1', 'ai-step-2', 'ai-step-3'];
-            for(let id of steps) {
-                document.getElementById(id).classList.remove('opacity-0');
-                await new Promise(r => setTimeout(r, 400));
-            }
-
-            const content = document.getElementById('content').value;
-            let category = "其他建議";
-            let sentiment = "neutral";
-
-            const aiResult = await analyzeWithGemini(content);
-            if(aiResult && aiResult.category) {
-                category = aiResult.category;
-                sentiment = aiResult.sentiment;
-            } else {
-                if(content.includes("車") || transports.includes("微型運具 (YouBike)")) {
-                    category = "微型運具調度"; sentiment = "negative";
-                } else if (content.includes("公車") || content.includes("班次")) {
-                    category = "班次銜接"; sentiment = content.includes("好") ? "positive" : "negative";
-                } else if (content.includes("路") || transports.includes("步行/無障礙")) {
-                    category = "無障礙與步行"; sentiment = "negative";
-                }
-            }
-
-            const newDoc = {
-                station: document.getElementById('station').value,
-                transports: transports,
-                routeTime: document.getElementById('routeTime').value,
-                content: content,
-                ai_category: category,
-                ai_sentiment: sentiment,
-                status: "AI 彙整中",
-                statusCode: 0,
-                createdAt: serverTimestamp(),
-                uid: currentUser.uid
-            };
-
-            try {
-                await addDoc(collection(db, "feedbacks"), newDoc);
-                const userRef = doc(db, 'users', currentUser.uid);
-                await updateDoc(userRef, {
-                    points: increment(10),
-                    carbon: increment(transports.length > 0 ? 0.2 : 0)
-                });
-
-                document.getElementById('feedbackForm').reset();
-                showToast('發佈成功');
-                switchTab('feed');
-            } catch (error) {
-                showToast('發佈失敗', 'info');
-            } finally {
-                btn.disabled = false;
-                btn.classList.remove('opacity-50');
-                aiZone.classList.add('hidden');
-                steps.forEach(id => document.getElementById(id).classList.add('opacity-0'));
-            }
-        });
-
-        function renderNavTabs() {
-            const nav = document.getElementById('navTabs');
-            if(!nav) return;
-            if (currentRole === 'user') {
-                nav.innerHTML = `
-                    <button id="tab-feed" class="flex-1 py-3 text-center tab-active transition"><i class="fa-solid fa-comments mb-1 block text-lg"></i><span class="text-xs">佈告欄</span></button>
-                    <button id="tab-submit" class="flex-1 py-3 text-center tab-inactive transition"><i class="fa-solid fa-pen-to-square mb-1 block text-lg"></i><span class="text-xs">發聲</span></button>
-                    <button id="tab-rewards" class="flex-1 py-3 text-center tab-inactive transition"><i class="fa-solid fa-medal mb-1 block text-lg"></i><span class="text-xs">個人中心</span></button>
-                `;
-                document.getElementById('tab-feed').addEventListener('click', () => switchTab('feed'));
-                document.getElementById('tab-submit').addEventListener('click', () => switchTab('submit'));
-                document.getElementById('tab-rewards').addEventListener('click', () => switchTab('rewards'));
-            } else {
-                nav.innerHTML = `
-                    <button id="tab-feed" class="flex-1 py-3 text-center tab-active transition"><i class="fa-solid fa-comments mb-1 block text-lg"></i><span class="text-xs">佈告欄</span></button>
-                    <button id="tab-dashboard" class="flex-1 py-3 text-center tab-inactive transition"><i class="fa-solid fa-chart-pie mb-1 block text-lg"></i><span class="text-xs">儀表板</span></button>
-                `;
-                document.getElementById('tab-feed').addEventListener('click', () => switchTab('feed'));
-                document.getElementById('tab-dashboard').addEventListener('click', () => switchTab('dashboard'));
-            }
-        }
-
-        function switchTab(tabId) {
-            const allViews = ['feed', 'submit', 'rewards', 'dashboard'];
-            allViews.forEach(id => {
-                const view = document.getElementById(`view-${id}`);
-                const btn = document.getElementById(`tab-${id}`);
-                if(view) view.classList.add('hidden');
-                if(btn) {
-                    btn.classList.remove('tab-active');
-                    btn.classList.add('tab-inactive');
-                }
-            });
-            
-            const activeView = document.getElementById(`view-${tabId}`);
-            const activeBtn = document.getElementById(`tab-${tabId}`);
-            if(activeView) activeView.classList.remove('hidden');
-            if(activeBtn) {
-                activeBtn.classList.remove('tab-inactive');
-                activeBtn.classList.add('tab-active');
-            }
-
-            if(tabId === 'dashboard') {
-                if(!chartInstances.station) initCharts();
-                else updateDashboardStats();
-            }
-        }
-
-        document.getElementById('roleSelector').addEventListener('change', (e) => {
-            currentRole = e.target.value;
-            renderNavTabs();
-            switchTab('feed');
-            showToast(`已切換為${currentRole === 'admin' ? '管理員' : '市民'}視角`, 'info');
-        });
-
-        document.getElementById('exportCsvBtn').addEventListener('click', () => {
-            if(localFeedbacks.length === 0) {
-                showToast('無數據匯出', 'info');
-                return;
-            }
-            let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; 
-            csvContent += "發生站點,運具類型,特定班次時間,AI意見分類,AI情緒判定,處理進度,民眾回饋內容\n";
-            localFeedbacks.forEach(f => {
-                const tStr = (f.transports || []).join('; ');
-                const content = `"${(f.content || '').replace(/"/g, '""').replace(/\n/g, ' ')}"`;
-                csvContent += `${f.station},${tStr},${f.routeTime || ''},${f.ai_category},${f.ai_sentiment},${f.status},${content}\n`;
-            });
-            const link = document.createElement("a");
-            link.setAttribute("href", encodeURI(csvContent));
-            link.setAttribute("download", `三鶯線意見報表.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            showToast('報表匯出成功');
-        });
-
-        function initCharts() {
-            Chart.defaults.font.family = "'Noto Sans TC', sans-serif";
-            
-            const ctxStation = document.getElementById('stationChart').getContext('2d');
-            chartInstances.station = new Chart(ctxStation, {
-                type: 'bar',
-                data: { labels: ['LB07', 'LB08', 'LB06', '其他'], datasets: [{ data: [0, 0, 0, 0], backgroundColor: '#2980B9', borderRadius: 4 }] },
-                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true }, y: { grid: { display: false } } } }
-            });
-
-            const ctxCat = document.getElementById('categoryChart').getContext('2d');
-            chartInstances.category = new Chart(ctxCat, {
-                type: 'doughnut',
-                data: { labels: ['微型運具調度', '無障礙與步行', '班次銜接', '其他'], datasets: [{ data: [0, 0, 0, 0], backgroundColor: ['#E67E22', '#27AE60', '#2980B9', '#95A5A6'], borderWidth: 0 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } }, cutout: '65%' }
-            });
-
-            const ctxSen = document.getElementById('sentimentChart').getContext('2d');
-            chartInstances.sentiment = new Chart(ctxSen, {
-                type: 'bar',
-                data: { labels: ['良好體驗', '中立描述', '優化建議'], datasets: [{ data: [0, 0, 0], backgroundColor: ['#10B981', '#94A3B8', '#F43F5E'], borderRadius: 4 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true }, x: { grid: { display: false } } } }
-            });
-            updateDashboardStats();
-        }
-
-        function updateDashboardStats() {
-            if(!chartInstances.station) return;
-            
-            let sCount = { 'LB07': 0, 'LB08': 0, 'LB06': 0, '其他': 0 };
-            let cCount = { '微型運具調度': 0, '無障礙與步行': 0, '班次銜接': 0, '其他': 0 };
-            let senCount = { 'positive': 0, 'neutral': 0, 'negative': 0 };
-
-            localFeedbacks.forEach(f => {
-                const st = f.station || '';
-                if(st.includes('LB07')) sCount['LB07']++;
-                else if(st.includes('LB08')) sCount['LB08']++;
-                else if(st.includes('LB06')) sCount['LB06']++;
-                else sCount['其他']++;
-
-                if(cCount[f.ai_category] !== undefined) cCount[f.ai_category]++;
-                else cCount['其他']++;
-
-                if(senCount[f.ai_sentiment] !== undefined) senCount[f.ai_sentiment]++;
-            });
-
-            chartInstances.station.data.datasets[0].data = [sCount['LB07'], sCount['LB08'], sCount['LB06'], sCount['其他']];
-            chartInstances.station.update();
-
-            chartInstances.category.data.datasets[0].data = [cCount['微型運具調度'], cCount['無障礙與步行'], cCount['班次銜接'], cCount['其他']];
-            chartInstances.category.update();
-
-            chartInstances.sentiment.data.datasets[0].data = [senCount['positive'], senCount['neutral'], senCount['negative']];
-            chartInstances.sentiment.update();
-        }
-
-        renderNavTabs();
-    </script>
+    <footer class="relative z-10 pt-3 border-t border-slate-200 flex justify-between items-center bg-white">
+      <div class="flex items-center gap-3">
+        <span class="text-xs font-extrabold text-slate-900 flex items-center gap-1.5">
+          <i class="fa-solid fa-earth-americas text-emerald-600"></i> 關聯永續指標：
+        </span>
+        <div class="flex items-center gap-2">
+          <span class="inline-flex items-center gap-1 bg-amber-500 text-white font-black text-[10px] px-2 py-0.5 rounded shadow-xs">
+            SDG 9 產業創新與基礎設施
+          </span>
+          <span class="inline-flex items-center gap-1 bg-orange-500 text-white font-black text-[10px] px-2 py-0.5 rounded shadow-xs">
+            SDG 11 永續城鄉與社區
+          </span>
+          <span class="inline-flex items-center gap-1 bg-emerald-600 text-white font-black text-[10px] px-2 py-0.5 rounded shadow-xs">
+            SDG 13 氣候行動
+          </span>
+          <span class="inline-flex items-center gap-1 bg-blue-800 text-white font-black text-[10px] px-2 py-0.5 rounded shadow-xs">
+            SDG 17 跨域夥伴關係
+          </span>
+        </div>
+      </div>
+      <div class="text-right text-[11px] text-slate-500">
+        <span class="font-bold text-slate-700">協作單位：</span>新北市政府交通局、新北捷運公司、在地商圈與學研機構
+      </div>
+    </footer>
+  </div>
 </body>
 </html>
