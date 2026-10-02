@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>碳吉小幫手 AI 客服介面展示</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#27AE60',
+            secondary: '#2980B9',
+            tanji: '#E67E22',
+            dark: '#0F172A',
+            surface: '#F8FAFC'
+          },
+          fontFamily: {
+            sans: ['"Noto Sans TC"', 'Inter', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background: #0B1120;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      margin: 0;
+      box-sizing: border-box;
+    }
+    .slide-canvas {
+      width: 1280px;
+      height: 720px;
+      max-width: 100%;
+      aspect-ratio: 16 / 9;
+      background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+      border-radius: 16px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 48px 64px;
+      position: relative;
+      overflow: hidden;
+      box-sizing: border-box;
+    }
+    .glow-bg {
+      position: absolute;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(230, 126, 34, 0.15) 0%, transparent 70%);
+      right: 15%;
+      top: 10%;
+      pointer-events: none;
+    }
+    .phone-mockup {
+      width: 380px;
+      height: 610px;
+      background: #FFFFFF;
+      border-radius: 36px;
+      border: 8px solid #334155;
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+    .chat-bubble-user {
+      background: #27AE60;
+      color: #FFFFFF;
+      border-radius: 16px 16px 2px 16px;
+      font-size: 13px;
+      line-height: 1.5;
+      padding: 10px 14px;
+      box-shadow: 0 2px 4px rgba(39, 174, 96, 0.15);
+      max-width: 82%;
+      align-self: flex-end;
+    }
+    .chat-bubble-ai {
+      background: #F1F5F9;
+      color: #334155;
+      border-radius: 16px 16px 16px 2px;
+      font-size: 13px;
+      line-height: 1.5;
+      padding: 10px 14px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+      max-width: 82%;
+      align-self: flex-start;
+      border: 1px solid #E2E8F0;
+    }
+  </style>
+</head>
+<body class="font-sans antialiased text-slate-800">
+  <div class="slide-canvas">
+    <div class="glow-bg"></div>
+
+    <!-- 左側：流程與進行方式解說區 -->
+    <div class="w-1/2 pr-8 text-white z-10 flex flex-col justify-center">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="bg-orange-500/20 border border-orange-500/40 text-orange-400 text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5">
+          <i class="fa-solid fa-comments"></i> 互動進行機制
+        </span>
+        <span class="text-xs text-slate-400 font-medium">即時互動與服務流程</span>
+      </div>
+      
+      <h1 class="text-3xl font-black tracking-tight leading-tight mb-2">
+        碳吉小幫手：<br>
+        <span class="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-300">民眾如何與 AI 導覽員互動？</span>
+      </h1>
+      
+      <p class="text-xs text-slate-300 leading-relaxed mb-5">
+        常駐於平台右下角的懸浮客服，隨時為乘車民眾提供即時引導，扮演「降低疑慮、引導發聲、回饋點數」的轉運中樞。
+      </p>
+
+      <!-- 4 步驟操作流程 -->
+      <div class="space-y-2.5 mb-5">
+        <div class="bg-slate-800/80 border border-slate-700/80 rounded-xl p-3 flex items-start gap-3">
+          <div class="w-7 h-7 rounded-lg bg-orange-500/20 text-orange-400 font-bold text-xs flex items-center justify-center shrink-0 border border-orange-500/30">
+            01
+          </div>
+          <div>
+            <div class="text-xs font-bold text-slate-200">一鍵喚醒對話視窗</div>
+            <div class="text-[11px] text-slate-400 mt-0.5">點擊右下角懸浮橘色氣泡，即可在任何分頁快速拉起諮詢面板，不中斷當前瀏覽。</div>
+          </div>
+        </div>
+
+        <div class="bg-slate-800/80 border border-slate-700/80 rounded-xl p-3 flex items-start gap-3">
+          <div class="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 font-bold text-xs flex items-center justify-center shrink-0 border border-emerald-500/30">
+            02
+          </div>
+          <div>
+            <div class="text-xs font-bold text-slate-200">關鍵字提問</div>
+            <div class="text-[11px] text-slate-400 mt-0.5">針對「三鶯線轉乘、站點導覽、碳吉集點」快速解惑。</div>
+          </div>
+        </div>
+
+        <div class="bg-slate-800/80 border border-slate-700/80 rounded-xl p-3 flex items-start gap-3">
+          <div class="w-7 h-7 rounded-lg bg-blue-500/20 text-blue-400 font-bold text-xs flex items-center justify-center shrink-0 border border-blue-500/30">
+            03
+          </div>
+          <div>
+            <div class="text-xs font-bold text-slate-200">即時回應</div>
+            <div class="text-[11px] text-slate-400 mt-0.5">當民眾遭遇誤點、候車過久時，提供即時且有同理心的回應。</div>
+          </div>
+        </div>
+
+        <div class="bg-slate-800/80 border border-slate-700/80 rounded-xl p-3 flex items-start gap-3">
+          <div class="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 font-bold text-xs flex items-center justify-center shrink-0 border border-amber-500/30">
+            04
+          </div>
+          <div>
+            <div class="text-xs font-bold text-slate-200">引流至「我要發聲」</div>
+            <div class="text-[11px] text-slate-400 mt-0.5">引導乘客前往「我要發聲」上傳照片與站點填報。</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="text-xs text-slate-400 flex items-center gap-2">
+        <i class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span>即時閉環：<b>提問解惑 ➔ 參與共創 ➔ 累積碳吉</b></span>
+      </div>
+    </div>
+
+    <!-- 右側：手機視窗 Mockup（放大展示真實對話） -->
+    <div class="w-1/2 flex justify-center items-center z-10">
+      <div class="phone-mockup">
+        
+        <!-- 手機頂部狀態條與小幫手 Header -->
+        <div class="bg-gradient-to-r from-orange-400 to-tanji text-white px-4 py-3.5 flex justify-between items-center shadow-sm">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-sm shadow-inner">
+              <i class="fa-solid fa-robot"></i>
+            </div>
+            <div>
+              <div class="font-bold text-sm leading-tight">碳吉小幫手</div>
+              <div class="text-[10px] text-orange-100 flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-300"></span> 線上值勤中
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 text-white/80 text-xs">
+            <span class="bg-black/10 px-2 py-0.5 rounded text-[10px]">AI 導覽員</span>
+          </div>
+        </div>
+
+        <!-- 聊天對話流（模擬真實能力問答） -->
+        <div class="flex-grow p-4 overflow-y-auto flex flex-col gap-3.5 bg-slate-50 text-slate-700">
+          
+          <!-- AI 開場白 -->
+          <div class="chat-bubble-ai">
+            你好！👋 我是<strong>碳吉小幫手</strong>。有任何關於集點、三鶯線或平台操作的問題，都可以問我喔！
+          </div>
+
+          <!-- 對話 1：詢問集點方式 -->
+          <div class="chat-bubble-user">
+            請問要怎麼累積碳吉點數？
+          </div>
+          <div class="chat-bubble-ai">
+            很簡單喔！註冊會員直接送您 <strong>50 點</strong>初始碳吉；在「我要發聲」分享搭乘心得，每次還能再拿 <strong>10 點</strong>！點數未來能折抵三鶯在地商圈消費喔！✨
+          </div>
+
+          <!-- 對話 2：轉乘路線詢問 -->
+          <div class="chat-bubble-user">
+            三鶯線可以轉板南線去台北車站嗎？
+          </div>
+          <div class="chat-bubble-ai">
+            可以的！請搭乘三鶯線至 <strong>LB01 頂埔站</strong>，出站即可直接轉乘捷運板南線，直達板橋與台北車站喔！🚇
+          </div>
+
+          <!-- 對話 3：抱怨班距（測試安撫與引導能力） -->
+          <div class="chat-bubble-user">
+            假日去鶯歌老街車次好少，等超久！
+          </div>
+          <div class="chat-bubble-ai">
+            等車辛苦了！😢 建議您點選下方的<strong>「我要發聲」</strong>，填寫站點與時段送出意見，系統會把這份數據送交捷運公司研議增班，還能現賺 <strong>10 碳吉</strong> 喔！
+          </div>
+
+        </div>
+
+        <!-- 底部假輸入框 -->
+        <div class="p-2.5 bg-white border-t border-slate-150 flex gap-2 items-center">
+          <div class="flex-grow bg-slate-100 rounded-full px-3.5 py-1.5 text-xs text-slate-400 flex items-center justify-between">
+            <span>輸入訊息詢問小幫手...</span>
+            <i class="fa-regular fa-face-smile text-slate-400"></i>
+          </div>
+          <div class="bg-tanji text-white w-7 h-7 rounded-full flex items-center justify-center text-xs shadow-sm">
+            <i class="fa-solid fa-paper-plane"></i>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>
